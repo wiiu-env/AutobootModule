@@ -1,4 +1,6 @@
 #include <malloc.h>
+#include <cstdio>
+#include <cstring>
 #include <coreinit/screen.h>
 #include <coreinit/filesystem.h>
 #include <coreinit/memdefaultheap.h>
@@ -31,12 +33,58 @@
 #define COLOR_BORDER     Color(204, 204, 204, 255)
 #define COLOR_BORDER_HIGHLIGHTED Color(0x3478e4ff)
 
+enum {
+    BOOT_OPTION_WII_U_MENU,
+    BOOT_OPTION_HOMEBREW_LAUNCHER,
+    BOOT_OPTION_VWII_SYSTEM_MENU,
+    BOOT_OPTION_VWII_HOMEBREW_CHANNEL,
+};
+
 static const char* menu_options[] = {
     "Wii U Menu",
     "Homebrew Launcher",
     "vWii System Menu",
     "vWii Homebrew Channel",
 };
+
+static const char* autoboot_config_strings[] = {
+    "wiiu_menu",
+    "homebrew_launcher",
+    "vwii_system_menu",
+    "vwii_homebrew_channel",
+};
+
+int autobootOption = -1;
+
+void readAutobootOption(){
+    FILE* f = fopen("autoboot.txt", "r");
+    if (f) {
+        char buf[128]{};
+        fgets(buf, sizeof(buf), f);
+        fclose(f);
+
+        for (uint32_t i = 0; i < sizeof(autoboot_config_strings) / sizeof(char*); i++) {
+            if (strncmp(autoboot_config_strings[i], buf, strlen(autoboot_config_strings[i])) == 0) {
+                autobootOption = i;
+                break;
+            }
+        }
+    }
+}
+
+void writeAutobootOption(){
+    FILE* f = fopen("autoboot.txt", "w");
+    if (f) {
+        if (autobootOption >= 0) {
+            fputs(autoboot_config_strings[autobootOption], f);
+        }
+        else {
+            fputs("none", f);
+        }
+
+        fclose(f);
+    }
+}
 
 bool getQuickBoot() {
     auto bootCheck = CCRSysCaffeineBootCheck();
@@ -181,7 +229,7 @@ static void launchvWiiTitle(uint32_t titleId_low, uint32_t titleId_high){
     if (CMPTCheckScreenState() < 0) {
         CMPTAcctSetScreenType(SCREEN_TYPE_DRC);
         if (CMPTCheckScreenState() < 0) {
-             CMPTAcctSetScreenType(SCREEN_TYPE_TV);
+            CMPTAcctSetScreenType(SCREEN_TYPE_TV);
         }
     }
 
@@ -198,10 +246,10 @@ void bootvWiiMenu(void){
 }
 
 void bootHomebrewChannel(void){
-    launchvWiiTitle(0x00010001, 'OHBC');
+    launchvWiiTitle(0x00010001, 0x4f484243); // 'OHBC'
 }
 
-void handleMenuScreen(void){
+int handleMenuScreen(void){
     OSScreenInit();
 
     uint32_t tvBufferSize = OSScreenGetBufferSizeEx(SCREEN_TV);
@@ -219,7 +267,6 @@ void handleMenuScreen(void){
     DrawUtils::initFont();
 
     uint32_t selected = 0;
-    int autoBoot = -1;
     bool redraw = true;
     while (true) {
         VPADStatus vpad{};
@@ -241,11 +288,13 @@ void handleMenuScreen(void){
             break;
         }
         else if (vpad.trigger & VPAD_BUTTON_X) {
-            autoBoot = -1;
+            autobootOption = -1;
+            writeAutobootOption();
             redraw = true;
         }
         else if (vpad.trigger & VPAD_BUTTON_Y) {
-            autoBoot = selected;
+            autobootOption = selected;
+            writeAutobootOption();
             redraw = true;
         }
 
@@ -259,11 +308,11 @@ void handleMenuScreen(void){
                 if (i == selected) {
                     DrawUtils::drawRect(16, index, SCREEN_WIDTH - 16*2, 44, 4, COLOR_BORDER_HIGHLIGHTED);
                 } else {
-                    DrawUtils::drawRect(16, index, SCREEN_WIDTH - 16*2, 44, 2, (i == autoBoot) ? COLOR_AUTOBOOT : COLOR_BORDER);
+                    DrawUtils::drawRect(16, index, SCREEN_WIDTH - 16*2, 44, 2, (i == (uint32_t) autobootOption) ? COLOR_AUTOBOOT : COLOR_BORDER);
                 }
 
                 DrawUtils::setFontSize(24);
-                DrawUtils::setFontColor((i == autoBoot) ? COLOR_AUTOBOOT : COLOR_TEXT);
+                DrawUtils::setFontColor((i == (uint32_t) autobootOption) ? COLOR_AUTOBOOT : COLOR_TEXT);
                 DrawUtils::print(16*2, index + 8 + 24, menu_options[i]);
                 index += 42 + 8;
             }
@@ -291,22 +340,9 @@ void handleMenuScreen(void){
 
     DrawUtils::deinitFont();
 
-    switch (selected) {
-    case 0:
-        bootSystemMenu();
-        break;
-    case 1:
-        bootHomebrewLauncher();
-        break;
-    case 2:
-        bootvWiiMenu();
-        break;
-    case 3:
-        bootHomebrewChannel();
-        break;
-    }
-
     free(screenBuffer);
+
+    return selected;
 }
 
 
@@ -323,15 +359,35 @@ int main(int argc, char **argv){
         return 0;
     }
 
+    readAutobootOption();
+    int bootSelection = autobootOption;
+
     VPADStatus vpad{};
     VPADRead(VPAD_CHAN_0, &vpad, 1, NULL);
 
     if (vpad.hold & VPAD_BUTTON_PLUS) {
-        handleMenuScreen();
-        return 0;
+        bootSelection = handleMenuScreen();
     }
 
-    bootSystemMenu();
+    if (bootSelection >= 0) {
+        switch (bootSelection) {
+        case BOOT_OPTION_WII_U_MENU:
+            bootSystemMenu();
+            break;
+        case BOOT_OPTION_HOMEBREW_LAUNCHER:
+            bootHomebrewLauncher();
+            break;
+        case BOOT_OPTION_VWII_SYSTEM_MENU:
+            bootvWiiMenu();
+            break;
+        case BOOT_OPTION_VWII_HOMEBREW_CHANNEL:
+            bootHomebrewChannel();
+            break;
+        }
+    }
+    else {
+        bootSystemMenu();
+    }
 
     return 0;
 }
