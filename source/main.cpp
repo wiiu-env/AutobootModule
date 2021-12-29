@@ -1,6 +1,7 @@
 #include <malloc.h>
 #include <cstdio>
 #include <cstring>
+#include <string>
 #include <coreinit/screen.h>
 #include <coreinit/filesystem.h>
 #include <coreinit/memdefaultheap.h>
@@ -54,10 +55,11 @@ static const char* autoboot_config_strings[] = {
     "vwii_homebrew_channel",
 };
 
+std::string configPath;
 int autobootOption = -1;
 
 void readAutobootOption(){
-    FILE* f = fopen("autoboot.txt", "r");
+    FILE* f = fopen(configPath.c_str(), "r");
     if (f) {
         char buf[128]{};
         fgets(buf, sizeof(buf), f);
@@ -73,7 +75,7 @@ void readAutobootOption(){
 }
 
 void writeAutobootOption(){
-    FILE* f = fopen("autoboot.txt", "w");
+    FILE* f = fopen(configPath.c_str(), "w");
     if (f) {
         if (autobootOption >= 0) {
             fputs(autoboot_config_strings[autobootOption], f);
@@ -357,6 +359,11 @@ int main(int argc, char **argv){
 
     if (getQuickBoot()) {
         return 0;
+    }
+
+    configPath = "fs:/vol/exernal01/wiiu/autoboot.cfg";
+    if (argc >= 1) {
+        configPath = std::string(argv[0]) + "/autoboot.cfg";
     }
 
     readAutobootOption();
