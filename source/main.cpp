@@ -11,11 +11,9 @@
 #include <padscore/kpad.h>
 #include <nn/acp.h>
 #include <nn/act.h>
-#include <nn/cmpt/cmpt.h>
+#include <nn/cmpt.h>
 #include <nn/ccr/sys_caffeine.h>
-#include <nn/sl/common.h>
-#include <nn/sl/FileStream.h>
-#include <nn/sl/LaunchInfoDatabase.h>
+#include <nn/sl.h>
 #include <nn/spm.h>
 
 #include <whb/log_module.h>
@@ -93,7 +91,7 @@ bool getQuickBoot() {
     if (bootCheck == 0) {
         nn::sl::Initialize(MEMAllocFromDefaultHeapEx, MEMFreeToDefaultHeap);
         char path[0x80];
-        nn::sl::GetDefaultDatabasePath(path, 0x80, 0x00050010, 0x10066000); // ECO process
+        nn::sl::GetDefaultDatabasePath(path, 0x80, 0x0005001010066000); // ECO process
         FSCmdBlock cmdBlock;
         FSInitCmdBlock(&cmdBlock);
 
@@ -227,11 +225,11 @@ static void launchvWiiTitle(uint32_t titleId_low, uint32_t titleId_high){
     KPADInit();
 
     // Try to find a screen type that works
-    CMPTAcctSetScreenType(SCREEN_TYPE_BOTH);
+    CMPTAcctSetScreenType(CMPT_SCREEN_TYPE_BOTH);
     if (CMPTCheckScreenState() < 0) {
-        CMPTAcctSetScreenType(SCREEN_TYPE_DRC);
+        CMPTAcctSetScreenType(CMPT_SCREEN_TYPE_DRC);
         if (CMPTCheckScreenState() < 0) {
-            CMPTAcctSetScreenType(SCREEN_TYPE_TV);
+            CMPTAcctSetScreenType(CMPT_SCREEN_TYPE_TV);
         }
     }
 
@@ -272,7 +270,7 @@ int handleMenuScreen(void){
     bool redraw = true;
     while (true) {
         VPADStatus vpad{};
-        VPADRead(VPAD_CHAN_0, &vpad, 1, NULL);
+        VPADRead(VPAD_CHAN_0, &vpad, 1, nullptr);
 
         if (vpad.trigger & VPAD_BUTTON_UP) {
             if (selected > 0) {
