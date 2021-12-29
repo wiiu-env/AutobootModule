@@ -253,13 +253,13 @@ void bootHomebrewChannel() {
     launchvWiiTitle(0x00010001, 0x4f484243); // 'OHBC'
 }
 
-int32_t handleMenuScreen(int32_t autobootOption) {
+int32_t handleMenuScreen(int32_t autobootOptionInput) {
     OSScreenInit();
 
     uint32_t tvBufferSize = OSScreenGetBufferSizeEx(SCREEN_TV);
     uint32_t drcBufferSize = OSScreenGetBufferSizeEx(SCREEN_DRC);
 
-    uint8_t *screenBuffer = (uint8_t *) memalign(0x100, tvBufferSize + drcBufferSize);
+    auto *screenBuffer = (uint8_t *) memalign(0x100, tvBufferSize + drcBufferSize);
 
     OSScreenSetBufferEx(SCREEN_TV, screenBuffer);
     OSScreenSetBufferEx(SCREEN_DRC, screenBuffer + tvBufferSize);
@@ -271,6 +271,7 @@ int32_t handleMenuScreen(int32_t autobootOption) {
     DrawUtils::initFont();
 
     uint32_t selected = 0;
+    int autoboot = autobootOptionInput;
     bool redraw = true;
     while (true) {
         VPADStatus vpad{};
@@ -289,12 +290,10 @@ int32_t handleMenuScreen(int32_t autobootOption) {
         } else if (vpad.trigger & VPAD_BUTTON_A) {
             break;
         } else if (vpad.trigger & VPAD_BUTTON_X) {
-            autobootOption = -1;
-            writeAutobootOption(autobootOption);
+            autoboot = -1;
             redraw = true;
         } else if (vpad.trigger & VPAD_BUTTON_Y) {
-            autobootOption = selected;
-            writeAutobootOption(autobootOption);
+            autoboot = selected;
             redraw = true;
         }
 
@@ -308,11 +307,11 @@ int32_t handleMenuScreen(int32_t autobootOption) {
                 if (i == selected) {
                     DrawUtils::drawRect(16, index, SCREEN_WIDTH - 16 * 2, 44, 4, COLOR_BORDER_HIGHLIGHTED);
                 } else {
-                    DrawUtils::drawRect(16, index, SCREEN_WIDTH - 16 * 2, 44, 2, (i == (uint32_t) autobootOption) ? COLOR_AUTOBOOT : COLOR_BORDER);
+                    DrawUtils::drawRect(16, index, SCREEN_WIDTH - 16 * 2, 44, 2, (i == (uint32_t) autoboot) ? COLOR_AUTOBOOT : COLOR_BORDER);
                 }
 
                 DrawUtils::setFontSize(24);
-                DrawUtils::setFontColor((i == (uint32_t) autobootOption) ? COLOR_AUTOBOOT : COLOR_TEXT);
+                DrawUtils::setFontColor((i == (uint32_t) autoboot) ? COLOR_AUTOBOOT : COLOR_TEXT);
                 DrawUtils::print(16 * 2, index + 8 + 24, menu_options[i]);
                 index += 42 + 8;
             }
@@ -336,6 +335,13 @@ int32_t handleMenuScreen(int32_t autobootOption) {
 
             redraw = false;
         }
+    }
+
+    DrawUtils::clear(COLOR_BLACK);
+    DrawUtils::endDraw();
+
+    if (autoboot != autobootOptionInput) {
+        writeAutobootOption(autoboot);
     }
 
     DrawUtils::deinitFont();
@@ -367,7 +373,7 @@ int32_t main(int32_t argc, char **argv) {
     int32_t bootSelection = readAutobootOption();
 
     VPADStatus vpad{};
-    VPADRead(VPAD_CHAN_0, &vpad, 1, NULL);
+    VPADRead(VPAD_CHAN_0, &vpad, 1, nullptr);
 
     if ((bootSelection == -1) || (vpad.hold & VPAD_BUTTON_PLUS)) {
         bootSelection = handleMenuScreen(bootSelection);
