@@ -38,6 +38,11 @@ LDFLAGS	=	-g $(ARCH) $(RPXSPECS) --entry=_start -Wl,-Map,$(notdir $*.map)
 
 LIBS	:= -lfreetype -lpng -lbz2 -lwut -lz
 
+ifeq ($(DEBUG),1)    
+CXXFLAGS += -DDEBUG -g
+CCFLAGS += -DDEBUG -g
+endif
+
 #-------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level
 # containing include and lib

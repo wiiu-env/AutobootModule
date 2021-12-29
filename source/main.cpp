@@ -353,10 +353,12 @@ int32_t handleMenuScreen(int32_t autobootOptionInput) {
 
 
 int32_t main(int32_t argc, char **argv) {
+#ifdef DEBUG
     if (!WHBLogModuleInit()) {
         WHBLogCafeInit();
         WHBLogUdpInit();
     }
+#endif // DEBUG
     DEBUG_FUNCTION_LINE("Hello from Autoboot");
 
     initExternalStorage();
