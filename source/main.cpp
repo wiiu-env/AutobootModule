@@ -237,12 +237,19 @@ static void launchvWiiTitle(uint32_t titleId_low, uint32_t titleId_high){
     CMPTGetDataSize(&dataSize);
 
     void* dataBuffer = memalign(0x40, dataSize);
-    CMPTLaunchTitle(dataBuffer, dataSize, titleId_low, titleId_high);
+
+    if (titleId_low == 0 && titleId_high == 0) {
+        CMPTLaunchMenu(dataBuffer, dataSize);
+    }
+    else {
+        CMPTLaunchTitle(dataBuffer, dataSize, titleId_low, titleId_high);
+    }
+
     free(dataBuffer);
 }
 
 void bootvWiiMenu(void){
-    launchvWiiTitle(0x00000001, 0x00000002);
+    launchvWiiTitle(0, 0);
 }
 
 void bootHomebrewChannel(void){
