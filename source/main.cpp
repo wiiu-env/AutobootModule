@@ -365,7 +365,7 @@ int main(int argc, char **argv){
     VPADStatus vpad{};
     VPADRead(VPAD_CHAN_0, &vpad, 1, NULL);
 
-    if (vpad.hold & VPAD_BUTTON_PLUS) {
+    if ((bootSelection == -1) || (vpad.hold & VPAD_BUTTON_PLUS)) {
         bootSelection = handleMenuScreen();
     }
 
