@@ -39,46 +39,44 @@ enum {
     BOOT_OPTION_VWII_HOMEBREW_CHANNEL,
 };
 
-static const char* menu_options[] = {
-    "Wii U Menu",
-    "Homebrew Launcher",
-    "vWii System Menu",
-    "vWii Homebrew Channel",
+static const char *menu_options[] = {
+        "Wii U Menu",
+        "Homebrew Launcher",
+        "vWii System Menu",
+        "vWii Homebrew Channel",
 };
 
-static const char* autoboot_config_strings[] = {
-    "wiiu_menu",
-    "homebrew_launcher",
-    "vwii_system_menu",
-    "vwii_homebrew_channel",
+static const char *autoboot_config_strings[] = {
+        "wiiu_menu",
+        "homebrew_launcher",
+        "vwii_system_menu",
+        "vwii_homebrew_channel",
 };
 
 std::string configPath;
-int autobootOption = -1;
 
-void readAutobootOption(){
-    FILE* f = fopen(configPath.c_str(), "r");
+int32_t readAutobootOption() {
+    FILE *f = fopen(configPath.c_str(), "r");
     if (f) {
         char buf[128]{};
         fgets(buf, sizeof(buf), f);
         fclose(f);
 
-        for (uint32_t i = 0; i < sizeof(autoboot_config_strings) / sizeof(char*); i++) {
+        for (uint32_t i = 0; i < sizeof(autoboot_config_strings) / sizeof(char *); i++) {
             if (strncmp(autoboot_config_strings[i], buf, strlen(autoboot_config_strings[i])) == 0) {
-                autobootOption = i;
-                break;
+                return i;
             }
         }
     }
+    return -1;
 }
 
-void writeAutobootOption(){
-    FILE* f = fopen(configPath.c_str(), "w");
+void writeAutobootOption(int32_t autobootOption) {
+    FILE *f = fopen(configPath.c_str(), "w");
     if (f) {
         if (autobootOption >= 0) {
             fputs(autoboot_config_strings[autobootOption], f);
-        }
-        else {
+        } else {
             fputs("none", f);
         }
 
@@ -142,7 +140,7 @@ bool getQuickBoot() {
         MCP_Close(handle);
         if (err == 0) {
             nn::act::Initialize();
-            for (int i = 0; i < 13; i++) {
+            for (int32_t i = 0; i < 13; i++) {
                 char uuid[16];
                 result = nn::act::GetUuidEx(uuid, i);
                 if (result.IsSuccess()) {
@@ -167,14 +165,14 @@ bool getQuickBoot() {
     return false;
 }
 
-static void initExternalStorage(void){
+static void initExternalStorage() {
     nn::spm::Initialize();
 
     nn::spm::StorageListItem items[0x20];
     int32_t numItems = nn::spm::GetStorageList(items, 0x20);
 
     bool found = false;
-    for (int i = 0; i < numItems; i++) {
+    for (int32_t i = 0; i < numItems; i++) {
         if (items[i].type == nn::spm::STORAGE_TYPE_WFS) {
             nn::spm::StorageInfo info{};
             if (nn::spm::GetStorageInfo(&info, &items[i].index) == 0) {
@@ -194,7 +192,7 @@ static void initExternalStorage(void){
         DEBUG_FUNCTION_LINE("Fallback to empty ExtendedStorage");
         nn::spm::VolumeId empty{};
         nn::spm::SetDefaultExtendedStorageVolumeId(empty);
-                
+
         nn::spm::StorageIndex storageIndex = 0;
         nn::spm::SetExtendedStorage(&storageIndex);
     }
@@ -202,7 +200,7 @@ static void initExternalStorage(void){
     nn::spm::Finalize();
 }
 
-void bootSystemMenu(void){
+void bootWiiUMenu() {
     nn::act::Initialize();
     nn::act::SlotNo slot = nn::act::GetSlotNo();
     nn::act::SlotNo defaultSlot = nn::act::GetDefaultAccount();
@@ -215,12 +213,12 @@ void bootSystemMenu(void){
     }
 }
 
-void bootHomebrewLauncher(void){
+void bootHomebrewLauncher() {
     uint64_t titleId = _SYSGetSystemApplicationTitleId(SYSTEM_APP_ID_MII_MAKER);
     _SYSLaunchTitleWithStdArgsInNoSplash(titleId, nullptr);
 }
 
-static void launchvWiiTitle(uint32_t titleId_low, uint32_t titleId_high){
+static void launchvWiiTitle(uint32_t titleId_low, uint32_t titleId_high) {
     // we need to init kpad for cmpt
     KPADInit();
 
@@ -236,33 +234,32 @@ static void launchvWiiTitle(uint32_t titleId_low, uint32_t titleId_high){
     uint32_t dataSize = 0;
     CMPTGetDataSize(&dataSize);
 
-    void* dataBuffer = memalign(0x40, dataSize);
+    void *dataBuffer = memalign(0x40, dataSize);
 
     if (titleId_low == 0 && titleId_high == 0) {
         CMPTLaunchMenu(dataBuffer, dataSize);
-    }
-    else {
+    } else {
         CMPTLaunchTitle(dataBuffer, dataSize, titleId_low, titleId_high);
     }
 
     free(dataBuffer);
 }
 
-void bootvWiiMenu(void){
+void bootvWiiMenu() {
     launchvWiiTitle(0, 0);
 }
 
-void bootHomebrewChannel(void){
+void bootHomebrewChannel() {
     launchvWiiTitle(0x00010001, 0x4f484243); // 'OHBC'
 }
 
-int handleMenuScreen(void){
+int32_t handleMenuScreen(int32_t autobootOption) {
     OSScreenInit();
 
     uint32_t tvBufferSize = OSScreenGetBufferSizeEx(SCREEN_TV);
     uint32_t drcBufferSize = OSScreenGetBufferSizeEx(SCREEN_DRC);
 
-    uint8_t* screenBuffer = (uint8_t*) memalign(0x100, tvBufferSize + drcBufferSize);
+    uint8_t *screenBuffer = (uint8_t *) memalign(0x100, tvBufferSize + drcBufferSize);
 
     OSScreenSetBufferEx(SCREEN_TV, screenBuffer);
     OSScreenSetBufferEx(SCREEN_DRC, screenBuffer + tvBufferSize);
@@ -284,24 +281,20 @@ int handleMenuScreen(void){
                 selected--;
                 redraw = true;
             }
-        }
-        else if (vpad.trigger & VPAD_BUTTON_DOWN) {
-            if (selected < sizeof(menu_options) / sizeof(char*) - 1) {
+        } else if (vpad.trigger & VPAD_BUTTON_DOWN) {
+            if (selected < sizeof(menu_options) / sizeof(char *) - 1) {
                 selected++;
                 redraw = true;
             }
-        }
-        else if (vpad.trigger & VPAD_BUTTON_A) {
+        } else if (vpad.trigger & VPAD_BUTTON_A) {
             break;
-        }
-        else if (vpad.trigger & VPAD_BUTTON_X) {
+        } else if (vpad.trigger & VPAD_BUTTON_X) {
             autobootOption = -1;
-            writeAutobootOption();
+            writeAutobootOption(autobootOption);
             redraw = true;
-        }
-        else if (vpad.trigger & VPAD_BUTTON_Y) {
+        } else if (vpad.trigger & VPAD_BUTTON_Y) {
             autobootOption = selected;
-            writeAutobootOption();
+            writeAutobootOption(autobootOption);
             redraw = true;
         }
 
@@ -311,16 +304,16 @@ int handleMenuScreen(void){
 
             // draw buttons
             uint32_t index = 8 + 24 + 8 + 4;
-            for (uint32_t i = 0; i < sizeof(menu_options) / sizeof(char*); i++) {
+            for (uint32_t i = 0; i < sizeof(menu_options) / sizeof(char *); i++) {
                 if (i == selected) {
-                    DrawUtils::drawRect(16, index, SCREEN_WIDTH - 16*2, 44, 4, COLOR_BORDER_HIGHLIGHTED);
+                    DrawUtils::drawRect(16, index, SCREEN_WIDTH - 16 * 2, 44, 4, COLOR_BORDER_HIGHLIGHTED);
                 } else {
-                    DrawUtils::drawRect(16, index, SCREEN_WIDTH - 16*2, 44, 2, (i == (uint32_t) autobootOption) ? COLOR_AUTOBOOT : COLOR_BORDER);
+                    DrawUtils::drawRect(16, index, SCREEN_WIDTH - 16 * 2, 44, 2, (i == (uint32_t) autobootOption) ? COLOR_AUTOBOOT : COLOR_BORDER);
                 }
 
                 DrawUtils::setFontSize(24);
                 DrawUtils::setFontColor((i == (uint32_t) autobootOption) ? COLOR_AUTOBOOT : COLOR_TEXT);
-                DrawUtils::print(16*2, index + 8 + 24, menu_options[i]);
+                DrawUtils::print(16 * 2, index + 8 + 24, menu_options[i]);
                 index += 42 + 8;
             }
 
@@ -332,11 +325,11 @@ int handleMenuScreen(void){
             DrawUtils::drawRectFilled(8, 8 + 24 + 4, SCREEN_WIDTH - 8 * 2, 3, COLOR_WHITE);
 
             // draw bottom bar
-            DrawUtils::drawRectFilled(8, SCREEN_HEIGHT - 24 - 8 - 4, SCREEN_WIDTH - 8*2, 3, COLOR_WHITE);
+            DrawUtils::drawRectFilled(8, SCREEN_HEIGHT - 24 - 8 - 4, SCREEN_WIDTH - 8 * 2, 3, COLOR_WHITE);
             DrawUtils::setFontSize(18);
             DrawUtils::print(16, SCREEN_HEIGHT - 8, "\ue07d Navigate ");
             DrawUtils::print(SCREEN_WIDTH - 16, SCREEN_HEIGHT - 8, "\ue000 Choose", true);
-            const char* autobootHints = "\ue002 Clear Autoboot / \ue003 Select Autboot";
+            const char *autobootHints = "\ue002 Clear Autoboot / \ue003 Select Autboot";
             DrawUtils::print(SCREEN_WIDTH / 2 + DrawUtils::getTextWidth(autobootHints) / 2, SCREEN_HEIGHT - 8, autobootHints, true);
 
             DrawUtils::endDraw();
@@ -353,7 +346,7 @@ int handleMenuScreen(void){
 }
 
 
-int main(int argc, char **argv){
+int32_t main(int32_t argc, char **argv) {
     if (!WHBLogModuleInit()) {
         WHBLogCafeInit();
         WHBLogUdpInit();
@@ -371,34 +364,35 @@ int main(int argc, char **argv){
         configPath = std::string(argv[0]) + "/autoboot.cfg";
     }
 
-    readAutobootOption();
-    int bootSelection = autobootOption;
+    int32_t bootSelection = readAutobootOption();
 
     VPADStatus vpad{};
     VPADRead(VPAD_CHAN_0, &vpad, 1, NULL);
 
     if ((bootSelection == -1) || (vpad.hold & VPAD_BUTTON_PLUS)) {
-        bootSelection = handleMenuScreen();
+        bootSelection = handleMenuScreen(bootSelection);
     }
 
     if (bootSelection >= 0) {
         switch (bootSelection) {
-        case BOOT_OPTION_WII_U_MENU:
-            bootSystemMenu();
-            break;
-        case BOOT_OPTION_HOMEBREW_LAUNCHER:
-            bootHomebrewLauncher();
-            break;
-        case BOOT_OPTION_VWII_SYSTEM_MENU:
-            bootvWiiMenu();
-            break;
-        case BOOT_OPTION_VWII_HOMEBREW_CHANNEL:
-            bootHomebrewChannel();
-            break;
+            case BOOT_OPTION_WII_U_MENU:
+                bootWiiUMenu();
+                break;
+            case BOOT_OPTION_HOMEBREW_LAUNCHER:
+                bootHomebrewLauncher();
+                break;
+            case BOOT_OPTION_VWII_SYSTEM_MENU:
+                bootvWiiMenu();
+                break;
+            case BOOT_OPTION_VWII_HOMEBREW_CHANNEL:
+                bootHomebrewChannel();
+                break;
+            default:
+                bootWiiUMenu();
+                break;
         }
-    }
-    else {
-        bootSystemMenu();
+    } else {
+        bootWiiUMenu();
     }
 
     return 0;
