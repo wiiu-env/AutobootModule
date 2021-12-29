@@ -270,7 +270,7 @@ int32_t handleMenuScreen(int32_t autobootOptionInput) {
     DrawUtils::initBuffers(screenBuffer, tvBufferSize, screenBuffer + tvBufferSize, drcBufferSize);
     DrawUtils::initFont();
 
-    uint32_t selected = 0;
+    uint32_t selected = autobootOptionInput > 0 ? autobootOptionInput : 0;
     int autoboot = autobootOptionInput;
     bool redraw = true;
     while (true) {
