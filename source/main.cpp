@@ -22,6 +22,7 @@
 
 #include "DrawUtils.h"
 #include "logger.h"
+#include "icon_png.h"
 
 #define COLOR_WHITE      Color(0xffffffff)
 #define COLOR_BLACK      Color(0, 0, 0, 255)
@@ -320,7 +321,8 @@ int32_t handleMenuScreen(int32_t autobootOptionInput) {
 
             // draw top bar
             DrawUtils::setFontSize(24);
-            DrawUtils::print(16, 6 + 24, "Tiramisu Boot Selector");
+            DrawUtils::drawPNG(16, 2, icon_png);
+            DrawUtils::print(64 + 2, 6 + 24, "Tiramisu Boot Selector");
             DrawUtils::drawRectFilled(8, 8 + 24 + 4, SCREEN_WIDTH - 8 * 2, 3, COLOR_WHITE);
 
             // draw bottom bar
@@ -328,7 +330,7 @@ int32_t handleMenuScreen(int32_t autobootOptionInput) {
             DrawUtils::setFontSize(18);
             DrawUtils::print(16, SCREEN_HEIGHT - 8, "\ue07d Navigate ");
             DrawUtils::print(SCREEN_WIDTH - 16, SCREEN_HEIGHT - 8, "\ue000 Choose", true);
-            const char *autobootHints = "\ue002 Clear Autoboot / \ue003 Select Autboot";
+            const char *autobootHints = "\ue002 Clear Autoboot / \ue003 Select Autoboot";
             DrawUtils::print(SCREEN_WIDTH / 2 + DrawUtils::getTextWidth(autobootHints) / 2, SCREEN_HEIGHT - 8, autobootHints, true);
 
             DrawUtils::endDraw();
@@ -337,6 +339,7 @@ int32_t handleMenuScreen(int32_t autobootOptionInput) {
         }
     }
 
+    DrawUtils::beginDraw();
     DrawUtils::clear(COLOR_BLACK);
     DrawUtils::endDraw();
 
