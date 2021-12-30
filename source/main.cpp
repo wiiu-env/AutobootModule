@@ -5,6 +5,7 @@
 #include <coreinit/screen.h>
 #include <coreinit/filesystem.h>
 #include <coreinit/memdefaultheap.h>
+#include <coreinit/title.h>
 #include <vpad/input.h>
 #include <sysapp/launch.h>
 #include <sysapp/title.h>
@@ -167,6 +168,12 @@ bool getQuickBoot() {
 }
 
 static void initExternalStorage() {
+    if (OSGetTitleID() == _SYSGetSystemApplicationTitleId(SYSTEM_APP_ID_MII_MAKER)) {
+        // nn::spm functions always call OSFatal when they fail, so we make sure have permission to use
+        // the lib before actually using it.
+        return;
+    }
+
     nn::spm::Initialize();
 
     nn::spm::StorageListItem items[0x20];
