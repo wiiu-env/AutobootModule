@@ -343,13 +343,15 @@ int32_t handleMenuScreen(int32_t autobootOptionInput) {
     DrawUtils::clear(COLOR_BLACK);
     DrawUtils::endDraw();
 
+    DrawUtils::deinitFont();
+
+    OSScreenShutdown();
+
+    free(screenBuffer);
+
     if (autoboot != autobootOptionInput) {
         writeAutobootOption(autoboot);
     }
-
-    DrawUtils::deinitFont();
-
-    free(screenBuffer);
 
     return selected;
 }
