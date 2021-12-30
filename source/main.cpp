@@ -352,7 +352,11 @@ int32_t handleMenuScreen(int32_t autobootOptionInput) {
 
     DrawUtils::deinitFont();
 
-    OSScreenShutdown();
+    if (OSGetTitleID() == _SYSGetSystemApplicationTitleId(SYSTEM_APP_ID_MII_MAKER) && autoboot == BOOT_OPTION_HOMEBREW_LAUNCHER) {
+        // When we're already in the Mii Maker and we want to launch the HBL, "OSScreenShutdown" will cause a black screen.
+    } else {
+        OSScreenShutdown();
+    }
 
     free(screenBuffer);
 
