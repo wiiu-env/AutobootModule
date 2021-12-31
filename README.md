@@ -2,9 +2,9 @@
 This is a bootmenu targetted to be loaded with the [EnvironmentLoader](https://github.com/wiiu-env/EnvironmentLoader). It allows you to boot into the Wii U Menu, Homebrew Channel, vWii System Menu or vWii Homebrew Channel.
 
 ## Usage
-Place the 50_hbl_installer.rpx in the [ENVIRONMENT]/modules/setup folder and run the EnvironmentLoader. 
+Place the `99_autoboot` in the `[ENVIRONMENT]/modules/setup` folder and run the EnvironmentLoader. 
 - Requires the [HBLInstallerWrapper](https://github.com/wiiu-env/HBLInstallerWrapper) in the `[ENVIRONMENT]/modules/setup` folder.
-- Requires the homebrew_launcher.elf in sd:/wiiu/apps/homebrew_launcher/homebrew_launcher.elf. 
+- Requires the `homebrew_launcher.elf` in `sd:/wiiu/apps/homebrew_launcher/homebrew_launcher.elf`. 
 
 Hold START (+) on the Gamepad while launching this Environment to force open the Autoboot menu.
 
