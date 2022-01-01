@@ -2,6 +2,8 @@
 #include <cstdio>
 #include <cstring>
 #include <string>
+#include <gx2/state.h>
+#include <coreinit/debug.h>
 #include <coreinit/thread.h>
 #include <coreinit/foreground.h>
 #include <coreinit/screen.h>
@@ -390,6 +392,9 @@ int32_t handleMenuScreen(int32_t autobootOptionInput) {
     uint32_t drcBufferSize = OSScreenGetBufferSizeEx(SCREEN_DRC);
 
     auto *screenBuffer = (uint8_t *) memalign(0x100, tvBufferSize + drcBufferSize);
+    if (screenBuffer == nullptr) {
+        OSFatal("Failed to allocate screenBuffer");
+    }
 
     OSScreenSetBufferEx(SCREEN_TV, screenBuffer);
     OSScreenSetBufferEx(SCREEN_DRC, screenBuffer + tvBufferSize);
@@ -474,11 +479,8 @@ int32_t handleMenuScreen(int32_t autobootOptionInput) {
 
     DrawUtils::deinitFont();
 
-    if (OSGetTitleID() == _SYSGetSystemApplicationTitleId(SYSTEM_APP_ID_MII_MAKER)) {
-        // When we're in the Mii Maker "OSScreenShutdown" will cause a black screen.
-    } else {
-        OSScreenShutdown();
-    }
+    // Call GX2Init to shut down OSScreen
+    GX2Init(nullptr);
 
     free(screenBuffer);
 
