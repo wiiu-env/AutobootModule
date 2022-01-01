@@ -26,7 +26,7 @@ INCLUDES	:=	source include
 #-------------------------------------------------------------------------------
 # options for code generation
 #-------------------------------------------------------------------------------
-CFLAGS	:=	-g -Wall -O3 -ffunction-sections -fno-exceptions \
+CFLAGS	:=	-g -Wall -O2 -ffunction-sections -fno-exceptions \
 			$(MACHDEP)
 
 CFLAGS	+=	$(INCLUDE) -D__WIIU__ -D__WUT__
