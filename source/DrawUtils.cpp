@@ -1,4 +1,5 @@
 #include "DrawUtils.h"
+#include <malloc.h>
 
 #include <cmath>
 #include <coreinit/memory.h>
@@ -7,6 +8,7 @@
 #include <png.h>
 #include <ft2build.h>
 #include FT_FREETYPE_H
+#include "MenuUtils.h"
 
 // buffer width
 #define TV_WIDTH 0x500
@@ -23,6 +25,25 @@ uint32_t DrawUtils::drcSize = 0;
 static FT_Library ft_lib = nullptr;
 static FT_Face ft_face = nullptr;
 static Color font_col = {0xFFFFFFFF};
+
+void* DrawUtils::InitOSScreen(){
+    OSScreenInit();
+
+    uint32_t tvBufferSize = OSScreenGetBufferSizeEx(SCREEN_TV);
+    uint32_t drcBufferSize = OSScreenGetBufferSizeEx(SCREEN_DRC);
+
+    auto *screenBuffer = (uint8_t *) memalign(0x100, tvBufferSize + drcBufferSize);
+    if (screenBuffer == nullptr) {
+        return nullptr;
+    }
+
+    OSScreenSetBufferEx(SCREEN_TV, screenBuffer);
+    OSScreenSetBufferEx(SCREEN_DRC, screenBuffer + tvBufferSize);
+
+    OSScreenEnableEx(SCREEN_TV, TRUE);
+    OSScreenEnableEx(SCREEN_DRC, TRUE);
+    return screenBuffer;
+}
 
 void DrawUtils::initBuffers(void* tvBuffer, uint32_t tvSize, void* drcBuffer, uint32_t drcSize)
 {

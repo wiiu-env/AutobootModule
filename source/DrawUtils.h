@@ -7,11 +7,11 @@
 #define SCREEN_HEIGHT 480
 
 union Color {
-    Color(uint32_t color) { 
-        this->color = color; 
+    Color(uint32_t color) {
+        this->color = color;
     }
-    Color(uint8_t r, uint8_t g, uint8_t b, uint8_t a) { 
-        this->r = r; this->g = g; this->b = b; this->a = a; 
+    Color(uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
+        this->r = r; this->g = g; this->b = b; this->a = a;
     }
 
     uint32_t color;
@@ -25,6 +25,7 @@ union Color {
 
 class DrawUtils {
 public:
+    static void* InitOSScreen();
     static void initBuffers(void* tvBuffer, uint32_t tvSize, void* drcBuffer, uint32_t drcSize);
     static void beginDraw();
     static void endDraw();
