@@ -135,7 +135,7 @@ void initExternalStorage() {
         tries++;
     }
     if (!found) {
-        DEBUG_FUNCTION_LINE("USB Storage is connected but either it's not connected or we ran into a timeout.");
+        DEBUG_FUNCTION_LINE("USB Storage is connected but either it doesn't have a WFS partition or we ran into a timeout.");
         InitEmptyExternalStorage();
     }
 

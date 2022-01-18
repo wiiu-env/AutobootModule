@@ -1,7 +1,11 @@
 #pragma once
 
-#include <stdint.h>
+#include <cstdint>
 #include <string>
+#include <memory>
+#include <nn/act.h>
+#include <vector>
+#include "ACTAccountInfo.h"
 
 #define COLOR_WHITE      Color(0xffffffff)
 #define COLOR_BLACK      Color(0, 0, 0, 255)
@@ -24,3 +28,5 @@ int32_t readAutobootOption(std::string &configPath);
 void writeAutobootOption(std::string &configPath, int32_t autobootOption);
 
 int32_t handleMenuScreen(std::string &configPath, int32_t autobootOptionInput);
+
+nn::act::SlotNo handleAccountSelectScreen(const std::vector<std::shared_ptr<AccountInfo>> &data);
