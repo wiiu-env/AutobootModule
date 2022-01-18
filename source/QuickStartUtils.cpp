@@ -197,6 +197,13 @@ bool getQuickBoot() {
             return true;
         }
 
+        if (info.titleId == 0x0005001010004000L) { // OSv0
+            DEBUG_FUNCTION_LINE("Launching vWii System Menu");
+            bootvWiiMenu();
+
+            return true;
+        }
+
         if (!SYSCheckTitleExists(info.titleId)) {
             DEBUG_FUNCTION_LINE("Title %016llX doesn't exist", info.titleId);
             return false;
