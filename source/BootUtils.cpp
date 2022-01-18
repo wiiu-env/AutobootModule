@@ -79,10 +79,13 @@ void handleAccountSelection() {
             }
             accountInfoList.push_back(accountInfo);
         }
-        auto slot = handleAccountSelectScreen(accountInfoList);
 
-        DEBUG_FUNCTION_LINE("Load slot %d", slot);
-        nn::act::LoadConsoleAccount(slot, 0, nullptr, false);
+        if (accountInfoList.size() > 0) {
+            auto slot = handleAccountSelectScreen(accountInfoList);
+
+            DEBUG_FUNCTION_LINE("Load slot %d", slot);
+            nn::act::LoadConsoleAccount(slot, 0, nullptr, false);
+        }
     }
     nn::act::Finalize();
 }

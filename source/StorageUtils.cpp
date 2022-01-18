@@ -59,7 +59,7 @@ static int numberUSBStorageDevicesConnected() {
             .match_params = MATCH_ANY
     };
 
-    int result = 0;
+    UHSStatus result;
     if ((result = UhsQueryInterfaces(handle, &filter, profiles, 10)) <= UHS_STATUS_OK) {
         DEBUG_FUNCTION_LINE("UhsQueryInterfaces failed");
         UhsClientClose(handle);
@@ -70,7 +70,7 @@ static int numberUSBStorageDevicesConnected() {
     }
 
     auto found = 0;
-    for (int i = 0; i < result; i++) {
+    for (int i = 0; i < (int) result; i++) {
         if (profiles[i].if_desc.bInterfaceClass == USBCLASS_STORAGE) {
             DEBUG_FUNCTION_LINE("Found USBCLASS_STORAGE");
             found++;

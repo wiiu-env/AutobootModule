@@ -78,7 +78,7 @@ int32_t handleMenuScreen(std::string &configPath, int32_t autobootOptionInput) {
     uint32_t tvBufferSize = OSScreenGetBufferSizeEx(SCREEN_TV);
     uint32_t drcBufferSize = OSScreenGetBufferSizeEx(SCREEN_DRC);
 
-    DrawUtils::initBuffers(screenBuffer, tvBufferSize, screenBuffer + tvBufferSize, drcBufferSize);
+    DrawUtils::initBuffers(screenBuffer, tvBufferSize, (void *) ((uint32_t) screenBuffer + tvBufferSize), drcBufferSize);
     DrawUtils::initFont();
 
     uint32_t selected = autobootOptionInput > 0 ? autobootOptionInput : 0;
@@ -192,7 +192,7 @@ nn::act::SlotNo handleAccountSelectScreen(const std::vector<std::shared_ptr<Acco
                 redraw = true;
             }
         } else if (vpad.trigger & VPAD_BUTTON_DOWN) {
-            if (selected < data.size() - 1) {
+            if (selected < (int32_t) data.size() - 1) {
                 selected++;
                 redraw = true;
             }
@@ -207,15 +207,15 @@ nn::act::SlotNo handleAccountSelectScreen(const std::vector<std::shared_ptr<Acco
             // draw buttons
             uint32_t index = 8 + 24 + 8 + 4;
             int32_t start = (selected / 5) * 5;
-            auto end = start + 5 < data.size() ? start + 5 : data.size();
+            int32_t end = (start + 5) < (int32_t) data.size() ? (start + 5) : data.size();
             for (int i = start; i < end; i++) {
                 auto &val = data[i];
                 if (val->miiImageSize > 0) {
                     // Draw Mii
                     auto width = 128;
                     auto height = 128;
-                    auto target_height = 64;
-                    auto target_width = 64;
+                    auto target_height = 64u;
+                    auto target_width = 64u;
                     auto xOffset = 20;
                     auto yOffset = index;
                     for (uint32_t y = 0; y < target_height; y++) {
@@ -265,7 +265,7 @@ nn::act::SlotNo handleAccountSelectScreen(const std::vector<std::shared_ptr<Acco
                 DrawUtils::print(SCREEN_WIDTH - 30, 68, "\uE01B", true);
             }
 
-            if (end < data.size()) {
+            if (end < (int32_t) data.size()) {
                 DrawUtils::setFontSize(36);
                 DrawUtils::print(SCREEN_WIDTH - 30, SCREEN_HEIGHT - 40, "\uE01C", true);
             }
