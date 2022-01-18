@@ -36,7 +36,7 @@ CXXFLAGS	:= $(CFLAGS) -std=c++20 -fno-rtti
 ASFLAGS	:=	-g $(ARCH)
 LDFLAGS	=	-g $(ARCH) $(RPXSPECS) --entry=_start -Wl,-Map,$(notdir $*.map)
 
-LIBS	:= -lfreetype -lpng -lbz2 -lwut -lz
+LIBS	:= -lfreetype -lpng -lbz2 -liosuhax -lwut -lz
 
 ifeq ($(DEBUG),1)    
 CXXFLAGS += -DDEBUG -g
@@ -47,7 +47,7 @@ endif
 # list of directories containing libraries, this must be the top level
 # containing include and lib
 #-------------------------------------------------------------------------------
-LIBDIRS	:= $(PORTLIBS) $(WUT_ROOT)
+LIBDIRS	:= $(PORTLIBS) $(WUT_ROOT) $(WUT_ROOT)/usr
 
 #-------------------------------------------------------------------------------
 # no real need to edit anything past this point unless you need to add additional

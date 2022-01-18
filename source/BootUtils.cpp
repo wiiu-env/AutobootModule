@@ -22,6 +22,7 @@
 #include <vpad/input.h>
 #include <gx2/state.h>
 
+#include <iosuhax.h>
 
 void handleAccountSelection();
 
@@ -118,5 +119,41 @@ void bootvWiiMenu() {
 }
 
 void bootHomebrewChannel() {
-    launchvWiiTitle(0x00010001, 0x4f484243); // 'OHBC'
+    // fall back to booting the vWii system menu if anything fails
+    uint64_t titleId = 0;
+
+    if (IOSUHAX_Open(nullptr) >= 0) {
+        int fsaFd = IOSUHAX_FSA_Open();
+        if (fsaFd >= 0) {
+            // mount the slccmpt
+            if (IOSUHAX_FSA_Mount(fsaFd, "/dev/slccmpt01", "/vol/storage_slccmpt01", 2, nullptr, 0) >= 0) {
+                fileStat_s stat;
+
+                // test if the OHBC or HBC is installed
+                if (IOSUHAX_FSA_GetStat(fsaFd, "/vol/storage_slccmpt01/title/00010001/4f484243/content/00000000.app", &stat) >= 0) {
+                    titleId = 0x000100014f484243; // 'OHBC'
+                }
+                else if (IOSUHAX_FSA_GetStat(fsaFd, "/vol/storage_slccmpt01/title/00010001/4c554c5a/content/00000000.app", &stat) >= 0) {
+                    titleId = 0x000100014c554c5a; // 'LULZ'
+                } else {
+                    DEBUG_FUNCTION_LINE("Cannot find HBC, booting vWii System Menu");
+                }
+
+                IOSUHAX_FSA_Unmount(fsaFd, "/vol/storage_slccmpt01", 2);
+            } else {
+                DEBUG_FUNCTION_LINE("Failed to mount SLCCMPT");
+            }
+
+            IOSUHAX_FSA_Close(fsaFd);
+        } else {
+            DEBUG_FUNCTION_LINE("Failed to open FSA");
+        }
+
+        IOSUHAX_Close();
+    } else {
+        DEBUG_FUNCTION_LINE("Failed to open IOSUHAX");
+    }
+
+    DEBUG_FUNCTION_LINE("Launching vWii title %016llx", titleId);
+    launchvWiiTitle((uint32_t) (titleId >> 32), (uint32_t) (titleId & 0xffffffff));
 }
