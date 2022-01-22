@@ -16,6 +16,8 @@ void __fini_wut_stdcpp();
 
 void __fini_wut_devoptab();
 
+void __fini();
+
 void __attribute__((weak)) __fini_wut_socket();
 
 void __attribute__((weak))
@@ -29,6 +31,7 @@ __init_wut_() {
 
 void __attribute__((weak))
 __fini_wut_() {
+    __fini();
     __fini_wut_devoptab();
     __fini_wut_stdcpp();
     __fini_wut_newlib();
