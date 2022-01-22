@@ -134,10 +134,9 @@ void bootHomebrewChannel() {
 
                 // test if the OHBC or HBC is installed
                 if (IOSUHAX_FSA_GetStat(fsaFd, "/vol/storage_slccmpt01/title/00010001/4f484243/content/00000000.app", &stat) >= 0) {
-                    titleId = 0x000100014f484243; // 'OHBC'
-                }
-                else if (IOSUHAX_FSA_GetStat(fsaFd, "/vol/storage_slccmpt01/title/00010001/4c554c5a/content/00000000.app", &stat) >= 0) {
-                    titleId = 0x000100014c554c5a; // 'LULZ'
+                    titleId = 0x000100014F484243L; // 'OHBC'
+                } else if (IOSUHAX_FSA_GetStat(fsaFd, "/vol/storage_slccmpt01/title/00010001/4c554c5a/content/00000000.app", &stat) >= 0) {
+                    titleId = 0x000100014C554C5AL; // 'LULZ'
                 } else {
                     DEBUG_FUNCTION_LINE("Cannot find HBC, booting vWii System Menu");
                 }
