@@ -1,20 +1,20 @@
-#include <malloc.h>
-#include <cstdint>
-#include <cstring>
-#include <string>
-#include <vector>
 #include "MenuUtils.h"
 #include "DrawUtils.h"
+#include <cstdint>
+#include <cstring>
+#include <malloc.h>
+#include <string>
+#include <vector>
 
-#include <coreinit/screen.h>
 #include <coreinit/debug.h>
-#include <vpad/input.h>
+#include <coreinit/screen.h>
 #include <gx2/state.h>
-#include <nn/act/client_cpp.h>
 #include <memory>
+#include <nn/act/client_cpp.h>
+#include <vpad/input.h>
 
-#include "icon_png.h"
 #include "ACTAccountInfo.h"
+#include "icon_png.h"
 #include "logger.h"
 
 const char *menu_options[] = {
@@ -31,13 +31,13 @@ const char *autoboot_config_strings[] = {
         "vwii_homebrew_channel",
 };
 
-template<typename ... Args>
-std::string string_format(const std::string &format, Args ... args) {
-    int size_s = std::snprintf(nullptr, 0, format.c_str(), args ...) + 1; // Extra space for '\0'
-    auto size = static_cast<size_t>( size_s );
+template<typename... Args>
+std::string string_format(const std::string &format, Args... args) {
+    int size_s = std::snprintf(nullptr, 0, format.c_str(), args...) + 1;// Extra space for '\0'
+    auto size = static_cast<size_t>(size_s);
     auto buf = std::make_unique<char[]>(size);
-    std::snprintf(buf.get(), size, format.c_str(), args ...);
-    return std::string(buf.get(), buf.get() + size - 1); // We don't want the '\0' inside
+    std::snprintf(buf.get(), size, format.c_str(), args...);
+    return std::string(buf.get(), buf.get() + size - 1);// We don't want the '\0' inside
 }
 
 int32_t readAutobootOption(std::string &configPath) {
@@ -220,9 +220,9 @@ nn::act::SlotNo handleAccountSelectScreen(const std::vector<std::shared_ptr<Acco
                     auto yOffset = index;
                     for (uint32_t y = 0; y < target_height; y++) {
                         for (uint32_t x = 0; x < target_width; x++) {
-                            uint32_t col = (((x) * width / target_width) + ((target_height - y - 1) * height / target_height) * width) * 4;
+                            uint32_t col = (((x) *width / target_width) + ((target_height - y - 1) * height / target_height) * width) * 4;
                             uint32_t colVal = ((uint32_t *) &val->miiImageBuffer[col + 1])[0];
-                            if (colVal == 0x00808080) { // Remove the green background.
+                            if (colVal == 0x00808080) {// Remove the green background.
                                 DrawUtils::drawPixel(x + xOffset, y + yOffset, COLOR_BACKGROUND.r, COLOR_BACKGROUND.g, COLOR_BACKGROUND.b, COLOR_BACKGROUND.a);
                             } else {
                                 DrawUtils::drawPixel(x + xOffset, y + yOffset, val->miiImageBuffer[col + 1], val->miiImageBuffer[col + 2], val->miiImageBuffer[col + 3], val->miiImageBuffer[col]);
@@ -289,7 +289,7 @@ nn::act::SlotNo handleAccountSelectScreen(const std::vector<std::shared_ptr<Acco
 
     auto i = 0;
     nn::act::SlotNo resultSlot = 0;
-    for (auto const &val: data) {
+    for (auto const &val : data) {
         if (i == selected) {
             resultSlot = val->slot;
         }

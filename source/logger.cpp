@@ -3,8 +3,8 @@
 #ifdef DEBUG
 #include <stdint.h>
 #include <whb/log_cafe.h>
-#include <whb/log_udp.h>
 #include <whb/log_module.h>
+#include <whb/log_udp.h>
 
 uint32_t moduleLogInit = false;
 uint32_t cafeLogInit = false;
@@ -17,7 +17,7 @@ void initLogging() {
         cafeLogInit = WHBLogCafeInit();
         udpLogInit = WHBLogUdpInit();
     }
-#endif // DEBUG
+#endif// DEBUG
 }
 
 void deinitLogging() {
@@ -34,5 +34,5 @@ void deinitLogging() {
         WHBLogUdpDeinit();
         udpLogInit = false;
     }
-#endif // DEBUG
+#endif// DEBUG
 }

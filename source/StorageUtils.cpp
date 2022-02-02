@@ -6,8 +6,8 @@
 
 #include <coreinit/thread.h>
 #include <coreinit/title.h>
-#include <nn/spm.h>
 #include <nn/acp/save.h>
+#include <nn/spm.h>
 #include <nsysuhs/uhs.h>
 #include <sysapp/title.h>
 
@@ -56,8 +56,7 @@ static int numberUSBStorageDevicesConnected() {
 
     UhsInterfaceProfile profiles[10];
     UhsInterfaceFilter filter = {
-            .match_params = MATCH_ANY
-    };
+            .match_params = MATCH_ANY};
 
     UHSStatus result;
     if ((result = UhsQueryInterfaces(handle, &filter, profiles, 10)) <= UHS_STATUS_OK) {
@@ -106,7 +105,7 @@ void initExternalStorage() {
     int tries = 0;
     bool found = false;
 
-    while (tries < 1200) { // Wait up to 20 seconds, like the Wii U Menu
+    while (tries < 1200) {// Wait up to 20 seconds, like the Wii U Menu
         int32_t numItems = nn::spm::GetStorageList(items, 0x20);
 
         DEBUG_FUNCTION_LINE("Number of items: %d", numItems);
@@ -141,4 +140,3 @@ void initExternalStorage() {
 
     nn::spm::Finalize();
 }
-

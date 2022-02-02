@@ -1,26 +1,26 @@
-#include <malloc.h>
-#include <string>
-#include <map>
-#include <locale>
-#include <vector>
 #include <codecvt>
+#include <locale>
+#include <malloc.h>
+#include <map>
 #include <memory>
+#include <string>
+#include <vector>
 
+#include "ACTAccountInfo.h"
 #include "BootUtils.h"
-#include "logger.h"
 #include "DrawUtils.h"
 #include "MenuUtils.h"
-#include "ACTAccountInfo.h"
+#include "logger.h"
 
 #include <coreinit/debug.h>
 #include <coreinit/screen.h>
-#include <nn/cmpt/cmpt.h>
+#include <gx2/state.h>
 #include <nn/act.h>
+#include <nn/cmpt/cmpt.h>
+#include <padscore/kpad.h>
 #include <sysapp/launch.h>
 #include <sysapp/title.h>
-#include <padscore/kpad.h>
 #include <vpad/input.h>
-#include <gx2/state.h>
 
 #include <iosuhax.h>
 
@@ -32,9 +32,9 @@ void bootWiiUMenu() {
     nn::act::SlotNo defaultSlot = nn::act::GetDefaultAccount();
     nn::act::Finalize();
 
-    if (defaultSlot) { //normal menu boot
+    if (defaultSlot) {//normal menu boot
         SYSLaunchMenu();
-    } else { //show mii select
+    } else {//show mii select
         _SYSLaunchMenuWithCheckingAccount(slot);
     }
 }
@@ -50,7 +50,7 @@ void handleAccountSelection() {
     nn::act::Initialize();
     nn::act::SlotNo defaultSlot = nn::act::GetDefaultAccount();
 
-    if (!defaultSlot) { // No default account is set.
+    if (!defaultSlot) {// No default account is set.
         std::vector<std::shared_ptr<AccountInfo>> accountInfoList;
         for (int32_t i = 0; i < 13; i++) {
             if (!nn::act::IsSlotOccupied(i)) {
@@ -134,9 +134,9 @@ void bootHomebrewChannel() {
 
                 // test if the OHBC or HBC is installed
                 if (IOSUHAX_FSA_GetStat(fsaFd, "/vol/storage_slccmpt01/title/00010001/4f484243/content/00000000.app", &stat) >= 0) {
-                    titleId = 0x000100014F484243L; // 'OHBC'
+                    titleId = 0x000100014F484243L;// 'OHBC'
                 } else if (IOSUHAX_FSA_GetStat(fsaFd, "/vol/storage_slccmpt01/title/00010001/4c554c5a/content/00000000.app", &stat) >= 0) {
-                    titleId = 0x000100014C554C5AL; // 'LULZ'
+                    titleId = 0x000100014C554C5AL;// 'LULZ'
                 } else {
                     DEBUG_FUNCTION_LINE("Cannot find HBC, booting vWii System Menu");
                 }
