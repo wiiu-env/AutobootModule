@@ -2,11 +2,11 @@
 #include <malloc.h>
 
 #include <cmath>
+#include <coreinit/cache.h>
 #include <coreinit/memory.h>
 #include <coreinit/screen.h>
-#include <coreinit/cache.h>
-#include <png.h>
 #include <ft2build.h>
+#include <png.h>
 #include FT_FREETYPE_H
 #include "MenuUtils.h"
 
@@ -266,7 +266,8 @@ void DrawUtils::print(uint32_t x, uint32_t y, const char *string, bool alignRigh
         buffer[num] = 0;
     } else {
         wchar_t *tmp = buffer;
-        while ((*tmp++ = *string++));
+        while ((*tmp++ = *string++))
+            ;
     }
 
     print(x, y, buffer, alignRight);
@@ -306,7 +307,8 @@ uint32_t DrawUtils::getTextWidth(const char *string) {
         buffer[num] = 0;
     } else {
         wchar_t *tmp = buffer;
-        while ((*tmp++ = *string++));
+        while ((*tmp++ = *string++))
+            ;
     }
 
     uint32_t width = getTextWidth(buffer);

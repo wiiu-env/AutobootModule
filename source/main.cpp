@@ -1,12 +1,12 @@
+#include "DrawUtils.h"
+#include "QuickStartUtils.h"
+#include "StorageUtils.h"
+#include "logger.h"
+#include <coreinit/debug.h>
+#include <gx2/state.h>
 #include <malloc.h>
 #include <string>
 #include <vpad/input.h>
-#include <coreinit/debug.h>
-#include <gx2/state.h>
-#include "StorageUtils.h"
-#include "QuickStartUtils.h"
-#include "DrawUtils.h"
-#include "logger.h"
 
 #include "BootUtils.h"
 #include "MenuUtils.h"

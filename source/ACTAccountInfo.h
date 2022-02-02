@@ -1,4 +1,7 @@
 #pragma once
+#include <nn/act.h>
+#include <string>
+#include <stdint.h>
 
 class AccountInfo {
 public:
