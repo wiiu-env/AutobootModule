@@ -105,7 +105,7 @@ void initExternalStorage() {
     int tries = 0;
     bool found = false;
 
-    while (tries < 1200) {// Wait up to 20 seconds, like the Wii U Menu
+    while (tries < 1200) { // Wait up to 20 seconds, like the Wii U Menu
         int32_t numItems = nn::spm::GetStorageList(items, 0x20);
 
         DEBUG_FUNCTION_LINE("Number of items: %d", numItems);
