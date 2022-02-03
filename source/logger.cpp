@@ -17,7 +17,7 @@ void initLogging() {
         cafeLogInit = WHBLogCafeInit();
         udpLogInit = WHBLogUdpInit();
     }
-#endif// DEBUG
+#endif // DEBUG
 }
 
 void deinitLogging() {
@@ -34,5 +34,5 @@ void deinitLogging() {
         WHBLogUdpDeinit();
         udpLogInit = false;
     }
-#endif// DEBUG
+#endif // DEBUG
 }

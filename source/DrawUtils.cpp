@@ -11,7 +11,7 @@
 #include "MenuUtils.h"
 
 // buffer width
-#define TV_WIDTH 0x500
+#define TV_WIDTH  0x500
 #define DRC_WIDTH 0x380
 
 bool DrawUtils::isBackBuffer;

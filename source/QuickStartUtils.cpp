@@ -87,7 +87,7 @@ bool getQuickBoot() {
     if (bootCheck == 0) {
         nn::sl::Initialize(MEMAllocFromDefaultHeapEx, MEMFreeToDefaultHeap);
         char path[0x80];
-        nn::sl::GetDefaultDatabasePath(path, 0x80, 0x0005001010066000);// ECO process
+        nn::sl::GetDefaultDatabasePath(path, 0x80, 0x0005001010066000); // ECO process
         FSCmdBlock cmdBlock;
         FSInitCmdBlock(&cmdBlock);
 
@@ -101,7 +101,7 @@ bool getQuickBoot() {
         auto database = new nn::sl::LaunchInfoDatabase;
         database->Load(fileStream, nn::sl::REGION_EUR);
 
-        CCRAppLaunchParam data;// load sys caffeine data
+        CCRAppLaunchParam data; // load sys caffeine data
         // load app launch param
         CCRSysCaffeineGetAppLaunchParam(&data);
 
@@ -197,7 +197,7 @@ bool getQuickBoot() {
             return true;
         }
 
-        if (info.titleId == 0x0005001010004000L) {// OSv0
+        if (info.titleId == 0x0005001010004000L) { // OSv0
             DEBUG_FUNCTION_LINE("Launching vWii System Menu");
             bootvWiiMenu();
 
