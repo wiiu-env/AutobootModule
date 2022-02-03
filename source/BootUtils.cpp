@@ -28,7 +28,7 @@ void handleAccountSelection();
 
 void bootWiiUMenu() {
     nn::act::Initialize();
-    nn::act::SlotNo slot = nn::act::GetSlotNo();
+    nn::act::SlotNo slot        = nn::act::GetSlotNo();
     nn::act::SlotNo defaultSlot = nn::act::GetDefaultAccount();
     nn::act::Finalize();
 
@@ -58,8 +58,8 @@ void handleAccountSelection() {
             }
             char16_t nameOut[nn::act::MiiNameSize];
             std::shared_ptr<AccountInfo> accountInfo = std::make_shared<AccountInfo>();
-            accountInfo->slot = i;
-            auto result = nn::act::GetMiiNameEx(reinterpret_cast<int16_t *>(nameOut), i);
+            accountInfo->slot                        = i;
+            auto result                              = nn::act::GetMiiNameEx(reinterpret_cast<int16_t *>(nameOut), i);
             if (result.IsSuccess()) {
                 std::u16string source;
                 std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> convert;
@@ -73,7 +73,7 @@ void handleAccountSelection() {
             }
 
             uint32_t imageSize = 0;
-            result = nn::act::GetMiiImageEx(&imageSize, accountInfo->miiImageBuffer, sizeof(accountInfo->miiImageBuffer), 0, i);
+            result             = nn::act::GetMiiImageEx(&imageSize, accountInfo->miiImageBuffer, sizeof(accountInfo->miiImageBuffer), 0, i);
             if (result.IsSuccess()) {
                 accountInfo->miiImageSize = imageSize;
             }
