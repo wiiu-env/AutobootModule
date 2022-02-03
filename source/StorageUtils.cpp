@@ -35,15 +35,15 @@ static int numberUSBStorageDevicesConnected() {
     memset(config, 0, sizeof(UhsConfig));
 
     config->controller_num = 0;
-    uint32_t size = 5120;
-    void *buffer = memalign(0x40, size);
+    uint32_t size          = 5120;
+    void *buffer           = memalign(0x40, size);
     if (buffer == nullptr) {
         free(handle);
         free(config);
     }
     memset(buffer, 0, size);
 
-    config->buffer = buffer;
+    config->buffer      = buffer;
     config->buffer_size = size;
 
     if (UhsClientOpen(handle, config) != UHS_STATUS_OK) {
@@ -102,7 +102,7 @@ void initExternalStorage() {
     nn::spm::Initialize();
 
     nn::spm::StorageListItem items[0x20];
-    int tries = 0;
+    int tries  = 0;
     bool found = false;
 
     while (tries < 1200) { // Wait up to 20 seconds, like the Wii U Menu

@@ -34,8 +34,8 @@ const char *autoboot_config_strings[] = {
 template<typename... Args>
 std::string string_format(const std::string &format, Args... args) {
     int size_s = std::snprintf(nullptr, 0, format.c_str(), args...) + 1; // Extra space for '\0'
-    auto size = static_cast<size_t>(size_s);
-    auto buf = std::make_unique<char[]>(size);
+    auto size  = static_cast<size_t>(size_s);
+    auto buf   = std::make_unique<char[]>(size);
     std::snprintf(buf.get(), size, format.c_str(), args...);
     return std::string(buf.get(), buf.get() + size - 1); // We don't want the '\0' inside
 }
@@ -75,15 +75,15 @@ int32_t handleMenuScreen(std::string &configPath, int32_t autobootOptionInput) {
         OSFatal("Failed to alloc memory for screen");
     }
 
-    uint32_t tvBufferSize = OSScreenGetBufferSizeEx(SCREEN_TV);
+    uint32_t tvBufferSize  = OSScreenGetBufferSizeEx(SCREEN_TV);
     uint32_t drcBufferSize = OSScreenGetBufferSizeEx(SCREEN_DRC);
 
     DrawUtils::initBuffers(screenBuffer, tvBufferSize, (void *) ((uint32_t) screenBuffer + tvBufferSize), drcBufferSize);
     DrawUtils::initFont();
 
     uint32_t selected = autobootOptionInput > 0 ? autobootOptionInput : 0;
-    int autoboot = autobootOptionInput;
-    bool redraw = true;
+    int autoboot      = autobootOptionInput;
+    bool redraw       = true;
     while (true) {
         VPADStatus vpad{};
         VPADRead(VPAD_CHAN_0, &vpad, 1, nullptr);
@@ -102,10 +102,10 @@ int32_t handleMenuScreen(std::string &configPath, int32_t autobootOptionInput) {
             break;
         } else if (vpad.trigger & VPAD_BUTTON_X) {
             autoboot = -1;
-            redraw = true;
+            redraw   = true;
         } else if (vpad.trigger & VPAD_BUTTON_Y) {
             autoboot = selected;
-            redraw = true;
+            redraw   = true;
         }
 
         if (redraw) {
@@ -174,14 +174,14 @@ nn::act::SlotNo handleAccountSelectScreen(const std::vector<std::shared_ptr<Acco
         OSFatal("Failed to alloc memory for screen");
     }
 
-    uint32_t tvBufferSize = OSScreenGetBufferSizeEx(SCREEN_TV);
+    uint32_t tvBufferSize  = OSScreenGetBufferSizeEx(SCREEN_TV);
     uint32_t drcBufferSize = OSScreenGetBufferSizeEx(SCREEN_DRC);
 
     DrawUtils::initBuffers(screenBuffer, tvBufferSize, (void *) ((uint32_t) screenBuffer + tvBufferSize), drcBufferSize);
     DrawUtils::initFont();
 
     int32_t selected = 0;
-    bool redraw = true;
+    bool redraw      = true;
     while (true) {
         VPADStatus vpad{};
         VPADRead(VPAD_CHAN_0, &vpad, 1, nullptr);
@@ -206,21 +206,21 @@ nn::act::SlotNo handleAccountSelectScreen(const std::vector<std::shared_ptr<Acco
 
             // draw buttons
             uint32_t index = 8 + 24 + 8 + 4;
-            int32_t start = (selected / 5) * 5;
-            int32_t end = (start + 5) < (int32_t) data.size() ? (start + 5) : data.size();
+            int32_t start  = (selected / 5) * 5;
+            int32_t end    = (start + 5) < (int32_t) data.size() ? (start + 5) : data.size();
             for (int i = start; i < end; i++) {
                 auto &val = data[i];
                 if (val->miiImageSize > 0) {
                     // Draw Mii
-                    auto width = 128;
-                    auto height = 128;
+                    auto width         = 128;
+                    auto height        = 128;
                     auto target_height = 64u;
-                    auto target_width = 64u;
-                    auto xOffset = 20;
-                    auto yOffset = index;
+                    auto target_width  = 64u;
+                    auto xOffset       = 20;
+                    auto yOffset       = index;
                     for (uint32_t y = 0; y < target_height; y++) {
                         for (uint32_t x = 0; x < target_width; x++) {
-                            uint32_t col = (((x) *width / target_width) + ((target_height - y - 1) * height / target_height) * width) * 4;
+                            uint32_t col    = (((x) *width / target_width) + ((target_height - y - 1) * height / target_height) * width) * 4;
                             uint32_t colVal = ((uint32_t *) &val->miiImageBuffer[col + 1])[0];
                             if (colVal == 0x00808080) { // Remove the green background.
                                 DrawUtils::drawPixel(x + xOffset, y + yOffset, COLOR_BACKGROUND.r, COLOR_BACKGROUND.g, COLOR_BACKGROUND.b, COLOR_BACKGROUND.a);
@@ -249,7 +249,7 @@ nn::act::SlotNo handleAccountSelectScreen(const std::vector<std::shared_ptr<Acco
             // draw top bar
             DrawUtils::setFontSize(24);
             DrawUtils::print(16, 6 + 24, "Select your Account");
-            auto curPage = (selected / 5) + 1;
+            auto curPage    = (selected / 5) + 1;
             auto totalPages = data.size() % 5 == 0 ? data.size() / 5 : data.size() / 5 + 1;
             DrawUtils::print(SCREEN_WIDTH - 50, 6 + 24, string_format("%d/%d", curPage, totalPages).c_str());
             DrawUtils::drawRectFilled(8, 8 + 24 + 4, SCREEN_WIDTH - 8 * 2, 3, COLOR_WHITE);
@@ -287,7 +287,7 @@ nn::act::SlotNo handleAccountSelectScreen(const std::vector<std::shared_ptr<Acco
 
     free(screenBuffer);
 
-    auto i = 0;
+    auto i                     = 0;
     nn::act::SlotNo resultSlot = 0;
     for (auto const &val : data) {
         if (i == selected) {

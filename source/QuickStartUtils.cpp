@@ -22,7 +22,7 @@ static void StartAppletAndExit() {
     DEBUG_FUNCTION_LINE("Wait for applet");
     ProcUIInit(OSSavesDone_ReadyToRelease);
 
-    bool doProcUi = true;
+    bool doProcUi                       = true;
     bool launchWiiUMenuOnNextForeground = false;
     while (true) {
         switch (ProcUIProcessMessages(true)) {
@@ -92,7 +92,7 @@ bool getQuickBoot() {
         FSInitCmdBlock(&cmdBlock);
 
         auto fileStream = new nn::sl::FileStream;
-        auto *fsClient = (FSClient *) memalign(0x40, sizeof(FSClient));
+        auto *fsClient  = (FSClient *) memalign(0x40, sizeof(FSClient));
         memset(fsClient, 0, sizeof(*fsClient));
         FSAddClient(fsClient, FS_ERROR_FLAG_NONE);
 
@@ -211,7 +211,7 @@ bool getQuickBoot() {
 
         MCPTitleListType titleInfo;
         int32_t handle = MCP_Open();
-        auto err = MCP_GetTitleInfo(handle, info.titleId, &titleInfo);
+        auto err       = MCP_GetTitleInfo(handle, info.titleId, &titleInfo);
         MCP_Close(handle);
         if (err == 0) {
             loadConsoleAccount(data.uuid);

@@ -7,16 +7,14 @@
 #include <string>
 #include <vector>
 
-// clang-format off
-#define COLOR_WHITE                 Color(0xffffffff)
-#define COLOR_BLACK                 Color(0, 0, 0, 255)
-#define COLOR_BACKGROUND            COLOR_BLACK
-#define COLOR_TEXT                  COLOR_WHITE
-#define COLOR_TEXT2                 Color(0xB3ffffff)
-#define COLOR_AUTOBOOT              Color(0xaeea00ff)
-#define COLOR_BORDER                Color(204, 204, 204, 255)
-#define COLOR_BORDER_HIGHLIGHTED    Color(0x3478e4ff)
-// clang-format on
+#define COLOR_WHITE              Color(0xffffffff)
+#define COLOR_BLACK              Color(0, 0, 0, 255)
+#define COLOR_BACKGROUND         COLOR_BLACK
+#define COLOR_TEXT               COLOR_WHITE
+#define COLOR_TEXT2              Color(0xB3ffffff)
+#define COLOR_AUTOBOOT           Color(0xaeea00ff)
+#define COLOR_BORDER             Color(204, 204, 204, 255)
+#define COLOR_BORDER_HIGHLIGHTED Color(0x3478e4ff)
 
 enum {
     BOOT_OPTION_WII_U_MENU,

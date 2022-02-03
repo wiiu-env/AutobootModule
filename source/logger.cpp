@@ -7,15 +7,15 @@
 #include <whb/log_udp.h>
 
 uint32_t moduleLogInit = false;
-uint32_t cafeLogInit = false;
-uint32_t udpLogInit = false;
+uint32_t cafeLogInit   = false;
+uint32_t udpLogInit    = false;
 #endif
 
 void initLogging() {
 #ifdef DEBUG
     if (!(moduleLogInit = WHBLogModuleInit())) {
         cafeLogInit = WHBLogCafeInit();
-        udpLogInit = WHBLogUdpInit();
+        udpLogInit  = WHBLogUdpInit();
     }
 #endif // DEBUG
 }
