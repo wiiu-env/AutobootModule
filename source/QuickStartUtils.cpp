@@ -93,7 +93,7 @@ bool getQuickBoot() {
 
         auto fileStream = new nn::sl::FileStream;
         auto *fsClient  = (FSClient *) memalign(0x40, sizeof(FSClient));
-		if (!fsClient) {
+        if (!fsClient) {
             DEBUG_FUNCTION_LINE("Couldn't alloc memory for fsClient.");
             return false;
         }
@@ -117,7 +117,7 @@ bool getQuickBoot() {
         delete fileStream;
 
         FSDelClient(fsClient, FS_ERROR_FLAG_NONE);
-		free(fsClient);
+        free(fsClient);
 
         nn::sl::Finalize();
 

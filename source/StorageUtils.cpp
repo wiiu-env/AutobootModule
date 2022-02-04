@@ -40,7 +40,7 @@ static int numberUSBStorageDevicesConnected() {
     if (!buffer) {
         free(handle);
         free(config);
-		return -3;
+        return -3;
     }
     memset(buffer, 0, size);
 
