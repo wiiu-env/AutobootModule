@@ -29,7 +29,7 @@ static int numberUSBStorageDevicesConnected() {
     memset(handle, 0, sizeof(UhsHandle));
     auto *config = (UhsConfig *) memalign(0x40, sizeof(UhsConfig));
     if (!config) {
-        free(config);
+        free(handle);
         return -2;
     }
     memset(config, 0, sizeof(UhsConfig));
@@ -37,9 +37,10 @@ static int numberUSBStorageDevicesConnected() {
     config->controller_num = 0;
     uint32_t size          = 5120;
     void *buffer           = memalign(0x40, size);
-    if (buffer == nullptr) {
+    if (!buffer) {
         free(handle);
         free(config);
+        return -3;
     }
     memset(buffer, 0, size);
 
@@ -51,7 +52,7 @@ static int numberUSBStorageDevicesConnected() {
         free(handle);
         free(config);
         free(buffer);
-        return -3;
+        return -4;
     }
 
     UhsInterfaceProfile profiles[10];
@@ -65,7 +66,7 @@ static int numberUSBStorageDevicesConnected() {
         free(handle);
         free(config);
         free(buffer);
-        return -4;
+        return -5;
     }
 
     auto found = 0;
@@ -79,7 +80,7 @@ static int numberUSBStorageDevicesConnected() {
     UhsClientClose(handle);
     free(handle);
     free(config);
-    free(config->buffer);
+    free(buffer);
     return found;
 }
 
