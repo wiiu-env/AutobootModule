@@ -136,7 +136,7 @@ int32_t handleMenuScreen(std::string &configPath, std::string &drcSettingPath, i
         } else if (vpad.trigger & VPAD_BUTTON_Y) {
             autoboot = selected;
             redraw   = true;
-        } else if (vpad.trigger & VPAD_BUTTON_B) {
+        } else if (vpad.trigger & VPAD_BUTTON_MINUS) {
             drcEnabled = !drcEnabled;
             redraw     = true;
         }
@@ -176,7 +176,7 @@ int32_t handleMenuScreen(std::string &configPath, std::string &drcSettingPath, i
             DrawUtils::setFontSize(18);
             DrawUtils::print(16, SCREEN_HEIGHT - 8, "\ue07d Navigate ");
             DrawUtils::print(SCREEN_WIDTH - 16, SCREEN_HEIGHT - 8, "\ue000 Choose", true);
-            const char *autobootHints = "\ue002 Clear Autoboot / \ue003 Select Autoboot / \ue001 Toggle vWii DRC";
+            const char *autobootHints = "\ue002 Clear Autoboot / \ue003 Select Autoboot / - Toggle vWii DRC";
             DrawUtils::print(SCREEN_WIDTH / 2 + DrawUtils::getTextWidth(autobootHints) / 2, SCREEN_HEIGHT - 8, autobootHints, true);
 
             DrawUtils::endDraw();
