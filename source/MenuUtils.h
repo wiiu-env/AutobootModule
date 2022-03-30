@@ -27,6 +27,10 @@ int32_t readAutobootOption(std::string &configPath);
 
 void writeAutobootOption(std::string &configPath, int32_t autobootOption);
 
-int32_t handleMenuScreen(std::string &configPath, int32_t autobootOptionInput);
+bool readDrcEnabledOption(std::string &configPath);
+
+void writeDrcEnabledOption(std::string &configPath, bool drcEnabled);
+
+int32_t handleMenuScreen(std::string &configPath, std::string &drcSettingPath, int32_t autobootOptionInput, bool drcEnabledInput);
 
 nn::act::SlotNo handleAccountSelectScreen(const std::vector<std::shared_ptr<AccountInfo>> &data);

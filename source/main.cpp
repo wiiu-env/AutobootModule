@@ -39,8 +39,10 @@ int32_t main(int32_t argc, char **argv) {
     }
 
     std::string configPath = "fs:/vol/exernal01/wiiu/autoboot.cfg";
+    std::string drcSettingPath = "fs:/vol/exernal01/wiiu/drcenabled.cfg";
     if (argc >= 1) {
         configPath = std::string(argv[0]) + "/autoboot.cfg";
+        drcSettingPath = std::string(argv[0]) + "/drcenabled.cfg";
     }
 
     int32_t bootSelection = readAutobootOption(configPath);
@@ -49,7 +51,7 @@ int32_t main(int32_t argc, char **argv) {
     VPADRead(VPAD_CHAN_0, &vpad, 1, nullptr);
 
     if ((bootSelection == -1) || (vpad.hold & VPAD_BUTTON_PLUS)) {
-        bootSelection = handleMenuScreen(configPath, bootSelection);
+        bootSelection = handleMenuScreen(configPath, drcSettingPath, bootSelection, readDrcEnabledOption(drcSettingPath));
     }
 
     if (bootSelection >= 0) {
@@ -61,10 +63,10 @@ int32_t main(int32_t argc, char **argv) {
                 bootHomebrewLauncher();
                 break;
             case BOOT_OPTION_VWII_SYSTEM_MENU:
-                bootvWiiMenu();
+                bootvWiiMenu(readDrcEnabledOption(drcSettingPath));
                 break;
             case BOOT_OPTION_VWII_HOMEBREW_CHANNEL:
-                bootHomebrewChannel();
+                bootHomebrewChannel(readDrcEnabledOption(drcSettingPath));
                 break;
             default:
                 bootWiiUMenu();

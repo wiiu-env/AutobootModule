@@ -69,7 +69,36 @@ void writeAutobootOption(std::string &configPath, int32_t autobootOption) {
     }
 }
 
-int32_t handleMenuScreen(std::string &configPath, int32_t autobootOptionInput) {
+bool readDrcEnabledOption(std::string &configPath) {
+    FILE *f = fopen(configPath.c_str(), "r");
+    if (f) {
+        char buf[128]{};
+        fgets(buf, sizeof(buf), f);
+        fclose(f);
+
+        if (strncmp("0", buf, strlen("0")) == 0) {
+            return false;
+        } else {
+            return true;
+        }
+    }
+    return true;
+}
+
+void writeDrcEnabledOption(std::string &configPath, bool drcEnabled) {
+    FILE *f = fopen(configPath.c_str(), "w");
+    if (f) {
+        if (drcEnabled) {
+            fputs("1", f);
+        } else {
+            fputs("0", f);
+        }
+
+        fclose(f);
+    }
+}
+
+int32_t handleMenuScreen(std::string &configPath, std::string &drcSettingPath, int32_t autobootOptionInput, bool drcEnabledInput) {
     auto screenBuffer = DrawUtils::InitOSScreen();
     if (!screenBuffer) {
         OSFatal("Failed to alloc memory for screen");
@@ -83,6 +112,7 @@ int32_t handleMenuScreen(std::string &configPath, int32_t autobootOptionInput) {
 
     uint32_t selected = autobootOptionInput > 0 ? autobootOptionInput : 0;
     int autoboot      = autobootOptionInput;
+    bool drcEnabled   = drcEnabledInput;
     bool redraw       = true;
     while (true) {
         VPADStatus vpad{};
@@ -106,6 +136,9 @@ int32_t handleMenuScreen(std::string &configPath, int32_t autobootOptionInput) {
         } else if (vpad.trigger & VPAD_BUTTON_Y) {
             autoboot = selected;
             redraw   = true;
+        } else if (vpad.trigger & VPAD_BUTTON_B) {
+            drcEnabled = !drcEnabled;
+            redraw     = true;
         }
 
         if (redraw) {
@@ -133,6 +166,9 @@ int32_t handleMenuScreen(std::string &configPath, int32_t autobootOptionInput) {
             DrawUtils::setFontSize(24);
             DrawUtils::drawPNG(16, 2, icon_png);
             DrawUtils::print(64 + 2, 6 + 24, "Tiramisu Boot Selector");
+            DrawUtils::setFontSize(18);
+            const char *vWiiDrcStatus = drcEnabled ? "vWii DRC Enabled" : "vWii DRC Disabled";
+            DrawUtils::print(SCREEN_WIDTH - DrawUtils::getTextWidth(vWiiDrcStatus) - 16, 6 + 24, vWiiDrcStatus);
             DrawUtils::drawRectFilled(8, 8 + 24 + 4, SCREEN_WIDTH - 8 * 2, 3, COLOR_WHITE);
 
             // draw bottom bar
@@ -140,7 +176,7 @@ int32_t handleMenuScreen(std::string &configPath, int32_t autobootOptionInput) {
             DrawUtils::setFontSize(18);
             DrawUtils::print(16, SCREEN_HEIGHT - 8, "\ue07d Navigate ");
             DrawUtils::print(SCREEN_WIDTH - 16, SCREEN_HEIGHT - 8, "\ue000 Choose", true);
-            const char *autobootHints = "\ue002 Clear Autoboot / \ue003 Select Autoboot";
+            const char *autobootHints = "\ue002 Clear Autoboot / \ue003 Select Autoboot / \ue001 Toggle vWii DRC";
             DrawUtils::print(SCREEN_WIDTH / 2 + DrawUtils::getTextWidth(autobootHints) / 2, SCREEN_HEIGHT - 8, autobootHints, true);
 
             DrawUtils::endDraw();
@@ -162,6 +198,10 @@ int32_t handleMenuScreen(std::string &configPath, int32_t autobootOptionInput) {
 
     if (autoboot != autobootOptionInput) {
         writeAutobootOption(configPath, autoboot);
+    }
+
+    if (drcEnabled != drcEnabledInput) {
+        writeDrcEnabledOption(drcSettingPath, drcEnabled);
     }
 
     return selected;

@@ -90,12 +90,17 @@ void handleAccountSelection() {
     nn::act::Finalize();
 }
 
-static void launchvWiiTitle(uint32_t titleId_low, uint32_t titleId_high) {
+static void launchvWiiTitle(uint32_t titleId_low, uint32_t titleId_high, bool drcEnabled) {
     // we need to init kpad for cmpt
     KPADInit();
 
     // Try to find a screen type that works
-    CMPTAcctSetScreenType(CMPT_SCREEN_TYPE_BOTH);
+    if (drcEnabled) {
+        CMPTAcctSetScreenType(CMPT_SCREEN_TYPE_BOTH);
+    } else {
+        CMPTAcctSetScreenType(CMPT_SCREEN_TYPE_TV);
+    }
+
     if (CMPTCheckScreenState() < 0) {
         CMPTAcctSetScreenType(CMPT_SCREEN_TYPE_DRC);
         if (CMPTCheckScreenState() < 0) {
@@ -117,11 +122,11 @@ static void launchvWiiTitle(uint32_t titleId_low, uint32_t titleId_high) {
     free(dataBuffer);
 }
 
-void bootvWiiMenu() {
-    launchvWiiTitle(0, 0);
+void bootvWiiMenu(bool drcEnabled) {
+    launchvWiiTitle(0, 0, drcEnabled);
 }
 
-void bootHomebrewChannel() {
+void bootHomebrewChannel(bool drcEnabled) {
     // fall back to booting the vWii system menu if anything fails
     uint64_t titleId = 0;
 
@@ -157,5 +162,5 @@ void bootHomebrewChannel() {
     }
 
     DEBUG_FUNCTION_LINE("Launching vWii title %016llx", titleId);
-    launchvWiiTitle((uint32_t) (titleId >> 32), (uint32_t) (titleId & 0xffffffff));
+    launchvWiiTitle((uint32_t) (titleId >> 32), (uint32_t) (titleId & 0xffffffff), drcEnabled);
 }

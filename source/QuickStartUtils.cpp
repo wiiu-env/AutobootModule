@@ -204,7 +204,7 @@ bool getQuickBoot() {
 
         if (info.titleId == 0x0005001010004000L) { // OSv0
             DEBUG_FUNCTION_LINE("Launching vWii System Menu");
-            bootvWiiMenu();
+            bootvWiiMenu(true);
 
             return true;
         }

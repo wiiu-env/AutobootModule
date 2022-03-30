@@ -6,6 +6,6 @@ void bootWiiUMenu();
 
 void bootHomebrewLauncher();
 
-void bootvWiiMenu();
+void bootvWiiMenu(bool drcEnabled);
 
-void bootHomebrewChannel();
+void bootHomebrewChannel(bool drcEnabled);
