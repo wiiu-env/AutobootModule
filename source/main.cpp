@@ -38,10 +38,10 @@ int32_t main(int32_t argc, char **argv) {
         return 0;
     }
 
-    std::string configPath = "fs:/vol/external01/wiiu/autoboot.cfg";
+    std::string configPath     = "fs:/vol/external01/wiiu/autoboot.cfg";
     std::string drcSettingPath = "fs:/vol/external01/wiiu/drcenabled.cfg";
     if (argc >= 1) {
-        configPath = std::string(argv[0]) + "/autoboot.cfg";
+        configPath     = std::string(argv[0]) + "/autoboot.cfg";
         drcSettingPath = std::string(argv[0]) + "/drcenabled.cfg";
     }
 
