@@ -62,10 +62,6 @@ static void StartAppletAndExit() {
     _Exit(0);
 }
 
-extern "C" int32_t SYSSwitchToBrowser(void *);
-extern "C" int32_t SYSSwitchToEShop(void *);
-extern "C" int32_t _SYSSwitchTo(uint32_t pfid);
-
 void loadConsoleAccount(const char *data_uuid) {
     nn::act::Initialize();
     for (int32_t i = 0; i < 13; i++) {
@@ -162,7 +158,7 @@ bool getQuickBoot() {
             info.titleId == 0x000500301001820AL) {
             DEBUG_FUNCTION_LINE("Launching the Download Management");
             loadConsoleAccount(data.uuid);
-            _SYSSwitchTo(12);
+            _SYSSwitchTo(SYSAPP_PFID_DOWNLOAD_MANAGEMENT);
 
             StartAppletAndExit();
 
@@ -173,7 +169,7 @@ bool getQuickBoot() {
             info.titleId == 0x000500301001620AL) {
             DEBUG_FUNCTION_LINE("Launching Miiverse");
             loadConsoleAccount(data.uuid);
-            _SYSSwitchTo(9);
+            _SYSSwitchTo(SYSAPP_PFID_MIIVERSE);
 
             StartAppletAndExit();
 
@@ -184,7 +180,7 @@ bool getQuickBoot() {
             info.titleId == 0x000500301001520AL) {
             DEBUG_FUNCTION_LINE("Launching Friendlist");
             loadConsoleAccount(data.uuid);
-            _SYSSwitchTo(11);
+            _SYSSwitchTo(SYSAPP_PFID_FRIENDLIST);
 
             StartAppletAndExit();
 
@@ -195,7 +191,7 @@ bool getQuickBoot() {
             info.titleId == 0x000500301001320AL) {
             DEBUG_FUNCTION_LINE("Launching TVii");
             loadConsoleAccount(data.uuid);
-            _SYSSwitchTo(3);
+            _SYSSwitchTo(SYSAPP_PFID_TVII);
 
             StartAppletAndExit();
 
