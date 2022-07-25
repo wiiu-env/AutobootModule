@@ -1,28 +1,25 @@
+#include "BootUtils.h"
+#include "ACTAccountInfo.h"
+#include "DrawUtils.h"
+#include "MenuUtils.h"
+#include "logger.h"
 #include <codecvt>
+#include <coreinit/debug.h>
+#include <coreinit/screen.h>
+#include <gx2/state.h>
+#include <iosuhax.h>
 #include <locale>
 #include <malloc.h>
 #include <map>
 #include <memory>
-#include <string>
-#include <vector>
-
-#include "ACTAccountInfo.h"
-#include "BootUtils.h"
-#include "DrawUtils.h"
-#include "MenuUtils.h"
-#include "logger.h"
-
-#include <coreinit/debug.h>
-#include <coreinit/screen.h>
-#include <gx2/state.h>
 #include <nn/act.h>
 #include <nn/cmpt/cmpt.h>
 #include <padscore/kpad.h>
+#include <string>
 #include <sysapp/launch.h>
 #include <sysapp/title.h>
+#include <vector>
 #include <vpad/input.h>
-
-#include <iosuhax.h>
 
 void handleAccountSelection();
 
@@ -90,7 +87,7 @@ void handleAccountSelection() {
     nn::act::Finalize();
 }
 
-static void launchvWiiTitle(uint32_t titleId_low, uint32_t titleId_high) {
+static void launchvWiiTitle(uint64_t titleId) {
     // we need to init kpad for cmpt
     KPADInit();
 
@@ -108,17 +105,17 @@ static void launchvWiiTitle(uint32_t titleId_low, uint32_t titleId_high) {
 
     void *dataBuffer = memalign(0x40, dataSize);
 
-    if (titleId_low == 0 && titleId_high == 0) {
+    if (titleId == 0) {
         CMPTLaunchMenu(dataBuffer, dataSize);
     } else {
-        CMPTLaunchTitle(dataBuffer, dataSize, titleId_low, titleId_high);
+        CMPTLaunchTitle(dataBuffer, dataSize, titleId);
     }
 
     free(dataBuffer);
 }
 
 void bootvWiiMenu() {
-    launchvWiiTitle(0, 0);
+    launchvWiiTitle(0);
 }
 
 void bootHomebrewChannel() {
@@ -130,7 +127,7 @@ void bootHomebrewChannel() {
         if (fsaFd >= 0) {
             // mount the slccmpt
             if (IOSUHAX_FSA_Mount(fsaFd, "/dev/slccmpt01", "/vol/storage_slccmpt01", 2, nullptr, 0) >= 0) {
-                fileStat_s stat;
+                FSStat stat;
 
                 // test if the OHBC or HBC is installed
                 if (IOSUHAX_FSA_GetStat(fsaFd, "/vol/storage_slccmpt01/title/00010001/4f484243/content/00000000.app", &stat) >= 0) {
@@ -157,5 +154,5 @@ void bootHomebrewChannel() {
     }
 
     DEBUG_FUNCTION_LINE("Launching vWii title %016llx", titleId);
-    launchvWiiTitle((uint32_t) (titleId >> 32), (uint32_t) (titleId & 0xffffffff));
+    launchvWiiTitle(titleId);
 }
