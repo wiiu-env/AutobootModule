@@ -142,7 +142,7 @@ int32_t handleMenuScreen(std::string &configPath, int32_t autobootOptionInput, b
             // draw top bar
             DrawUtils::setFontSize(24);
             DrawUtils::drawPNG(16, 2, icon_png);
-            DrawUtils::print(64 + 2, 6 + 24, "Tiramisu Boot Selector");
+            DrawUtils::print(64 + 2, 6 + 24, "Boot Selector");
             DrawUtils::drawRectFilled(8, 8 + 24 + 4, SCREEN_WIDTH - 8 * 2, 3, COLOR_WHITE);
 
             // draw bottom bar
