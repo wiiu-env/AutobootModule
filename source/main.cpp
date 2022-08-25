@@ -5,6 +5,7 @@
 #include <coreinit/debug.h>
 #include <gx2/state.h>
 #include <malloc.h>
+#include <mocha/mocha.h>
 #include <string>
 #include <sys/stat.h>
 #include <vpad/input.h>
@@ -38,6 +39,11 @@ int32_t main(int32_t argc, char **argv) {
         deinitLogging();
         return 0;
     }
+
+    if (Mocha_InitLibrary() != MOCHA_RESULT_SUCCESS) {
+        OSFatal("AutobootModule: Mocha_InitLibrary failed");
+    }
+
     bool showHBL           = false;
     std::string configPath = "fs:/vol/external01/wiiu/autoboot.cfg";
     if (argc >= 1) {
@@ -86,5 +92,6 @@ int32_t main(int32_t argc, char **argv) {
     }
 
     deinitLogging();
+    Mocha_DeinitLibrary();
     return 0;
 }
