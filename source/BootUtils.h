@@ -9,3 +9,5 @@ void bootHomebrewLauncher();
 void bootvWiiMenu();
 
 void bootHomebrewChannel();
+
+uint64_t getVWiiHBLTitleId();

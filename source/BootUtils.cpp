@@ -4,14 +4,11 @@
 #include "MenuUtils.h"
 #include "logger.h"
 #include <codecvt>
-#include <coreinit/debug.h>
-#include <coreinit/screen.h>
-#include <gx2/state.h>
-#include <iosuhax.h>
+#include <coreinit/filesystem_fsa.h>
 #include <locale>
 #include <malloc.h>
-#include <map>
 #include <memory>
+#include <mocha/mocha.h>
 #include <nn/act.h>
 #include <nn/cmpt/cmpt.h>
 #include <padscore/kpad.h>
@@ -19,7 +16,6 @@
 #include <sysapp/launch.h>
 #include <sysapp/title.h>
 #include <vector>
-#include <vpad/input.h>
 
 void handleAccountSelection();
 
@@ -118,41 +114,43 @@ void bootvWiiMenu() {
     launchvWiiTitle(0);
 }
 
-void bootHomebrewChannel() {
+uint64_t getVWiiHBLTitleId() {
     // fall back to booting the vWii system menu if anything fails
     uint64_t titleId = 0;
 
-    if (IOSUHAX_Open(nullptr) >= 0) {
-        int fsaFd = IOSUHAX_FSA_Open();
-        if (fsaFd >= 0) {
+    FSAInit();
+    auto client = FSAAddClient(nullptr);
+    if (client > 0) {
+        if (Mocha_UnlockFSClientEx(client) == MOCHA_RESULT_SUCCESS) {
             // mount the slccmpt
-            if (IOSUHAX_FSA_Mount(fsaFd, "/dev/slccmpt01", "/vol/storage_slccmpt01", 2, nullptr, 0) >= 0) {
+            if (FSAMount(client, "/dev/slccmpt01", "/vol/storage_slccmpt01", FSA_MOUNT_FLAG_GLOBAL_MOUNT, nullptr, 0) >= 0) {
                 FSStat stat;
 
                 // test if the OHBC or HBC is installed
-                if (IOSUHAX_FSA_GetStat(fsaFd, "/vol/storage_slccmpt01/title/00010001/4f484243/content/00000000.app", &stat) >= 0) {
+                if (FSAGetStat(client, "/vol/storage_slccmpt01/title/00010001/4f484243/content/00000000.app", &stat) >= 0) {
                     titleId = 0x000100014F484243L; // 'OHBC'
-                } else if (IOSUHAX_FSA_GetStat(fsaFd, "/vol/storage_slccmpt01/title/00010001/4c554c5a/content/00000000.app", &stat) >= 0) {
+                } else if (FSAGetStat(client, "/vol/storage_slccmpt01/title/00010001/4c554c5a/content/00000000.app", &stat) >= 0) {
                     titleId = 0x000100014C554C5AL; // 'LULZ'
                 } else {
-                    DEBUG_FUNCTION_LINE("Cannot find HBC, booting vWii System Menu");
+                    DEBUG_FUNCTION_LINE("Cannot find HBC");
                 }
-
-                IOSUHAX_FSA_Unmount(fsaFd, "/vol/storage_slccmpt01", 2);
+                FSAUnmount(client, "/vol/storage_slccmpt01", static_cast<FSAUnmountFlags>(2));
             } else {
-                DEBUG_FUNCTION_LINE("Failed to mount SLCCMPT");
+                DEBUG_FUNCTION_LINE_ERR("Failed to mount slccmpt01");
             }
-
-            IOSUHAX_FSA_Close(fsaFd);
         } else {
-            DEBUG_FUNCTION_LINE("Failed to open FSA");
+            DEBUG_FUNCTION_LINE_ERR("Failed to unlock FSClient");
         }
-
-        IOSUHAX_Close();
+        FSADelClient(client);
     } else {
-        DEBUG_FUNCTION_LINE("Failed to open IOSUHAX");
+        DEBUG_FUNCTION_LINE_ERR("Failed to add FSAClient");
     }
+    DEBUG_FUNCTION_LINE_ERR("%016llX", titleId);
+    return titleId;
+}
 
+void bootHomebrewChannel() {
+    uint64_t titleId = getVWiiHBLTitleId();
     DEBUG_FUNCTION_LINE("Launching vWii title %016llx", titleId);
     launchvWiiTitle(titleId);
 }
