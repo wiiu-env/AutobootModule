@@ -2,6 +2,7 @@
 
 #include "ACTAccountInfo.h"
 #include <cstdint>
+#include <map>
 #include <memory>
 #include <nn/act.h>
 #include <string>
@@ -27,6 +28,6 @@ int32_t readAutobootOption(std::string &configPath);
 
 void writeAutobootOption(std::string &configPath, int32_t autobootOption);
 
-int32_t handleMenuScreen(std::string &configPath, int32_t autobootOptionInput, bool showHBL, bool showvHBL);
+int32_t handleMenuScreen(std::string &configPath, int32_t autobootOptionInput, const std::map<uint32_t, std::string> &menu);
 
 nn::act::SlotNo handleAccountSelectScreen(const std::vector<std::shared_ptr<AccountInfo>> &data);

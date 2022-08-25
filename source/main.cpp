@@ -61,12 +61,21 @@ int32_t main(int32_t argc, char **argv) {
     VPADStatus vpad{};
     VPADRead(VPAD_CHAN_0, &vpad, 1, nullptr);
 
+    std::map<uint32_t, std::string> menu;
+    menu[BOOT_OPTION_WII_U_MENU] = "Wii U Menu";
+    if (showHBL) {
+        menu[BOOT_OPTION_HOMEBREW_LAUNCHER] = "Homebrew Launcher";
+    }
+    menu[BOOT_OPTION_VWII_SYSTEM_MENU] = "vWii System Menu";
+    if (showvHBL) {
+        menu[BOOT_OPTION_VWII_HOMEBREW_CHANNEL] = "vWii Homebrew Channel";
+    }
 
     if ((bootSelection == -1) ||
         (bootSelection == BOOT_OPTION_HOMEBREW_LAUNCHER && !showHBL) ||
         (bootSelection == BOOT_OPTION_VWII_HOMEBREW_CHANNEL && !showvHBL) ||
         (vpad.hold & VPAD_BUTTON_PLUS)) {
-        bootSelection = handleMenuScreen(configPath, bootSelection, showHBL, showvHBL);
+        bootSelection = handleMenuScreen(configPath, bootSelection, menu);
     }
 
     if (bootSelection >= 0) {
