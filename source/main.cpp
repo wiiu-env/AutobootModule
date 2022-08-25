@@ -6,6 +6,7 @@
 #include <gx2/state.h>
 #include <malloc.h>
 #include <string>
+#include <sys/stat.h>
 #include <vpad/input.h>
 
 #include "BootUtils.h"
@@ -37,10 +38,16 @@ int32_t main(int32_t argc, char **argv) {
         deinitLogging();
         return 0;
     }
-
+    bool showHBL           = false;
     std::string configPath = "fs:/vol/external01/wiiu/autoboot.cfg";
     if (argc >= 1) {
         configPath = std::string(argv[0]) + "/autoboot.cfg";
+
+        auto hblInstallerPath = std::string(argv[0]) + "/modules/setup/50_hbl_installer.rpx";
+        struct stat st {};
+        if (stat(hblInstallerPath.c_str(), &st) >= 0) {
+            showHBL = true;
+        }
     }
 
     int32_t bootSelection = readAutobootOption(configPath);
@@ -48,8 +55,8 @@ int32_t main(int32_t argc, char **argv) {
     VPADStatus vpad{};
     VPADRead(VPAD_CHAN_0, &vpad, 1, nullptr);
 
-    if ((bootSelection == -1) || (vpad.hold & VPAD_BUTTON_PLUS)) {
-        bootSelection = handleMenuScreen(configPath, bootSelection);
+    if ((bootSelection == -1) || (bootSelection == BOOT_OPTION_HOMEBREW_LAUNCHER && !showHBL) || (vpad.hold & VPAD_BUTTON_PLUS)) {
+        bootSelection = handleMenuScreen(configPath, bootSelection, showHBL);
     }
 
     if (bootSelection >= 0) {
@@ -58,6 +65,10 @@ int32_t main(int32_t argc, char **argv) {
                 bootWiiUMenu();
                 break;
             case BOOT_OPTION_HOMEBREW_LAUNCHER:
+                if (!showHBL) {
+                    bootWiiUMenu();
+                    break;
+                }
                 bootHomebrewLauncher();
                 break;
             case BOOT_OPTION_VWII_SYSTEM_MENU:
