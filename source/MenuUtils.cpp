@@ -1,28 +1,19 @@
 #include "MenuUtils.h"
-#include "DrawUtils.h"
-#include <cstdint>
-#include <cstring>
-#include <malloc.h>
-#include <string>
-#include <vector>
-
-#include <coreinit/debug.h>
-#include <coreinit/screen.h>
-#include <gx2/state.h>
-#include <memory>
-#include <nn/act/client_cpp.h>
-#include <vpad/input.h>
-
 #include "ACTAccountInfo.h"
+#include "DrawUtils.h"
 #include "icon_png.h"
 #include "logger.h"
-
-const char *menu_options[] = {
-        "Wii U Menu",
-        "Homebrew Launcher",
-        "vWii System Menu",
-        "vWii Homebrew Channel",
-};
+#include <coreinit/debug.h>
+#include <coreinit/screen.h>
+#include <cstdint>
+#include <cstring>
+#include <gx2/state.h>
+#include <malloc.h>
+#include <memory>
+#include <nn/act/client_cpp.h>
+#include <string>
+#include <vector>
+#include <vpad/input.h>
 
 const char *autoboot_config_strings[] = {
         "wiiu_menu",
@@ -69,7 +60,7 @@ void writeAutobootOption(std::string &configPath, int32_t autobootOption) {
     }
 }
 
-int32_t handleMenuScreen(std::string &configPath, int32_t autobootOptionInput, bool showHBL, bool showvHBL) {
+int32_t handleMenuScreen(std::string &configPath, int32_t autobootOptionInput, const std::map<uint32_t, std::string> &menu) {
     auto screenBuffer = DrawUtils::InitOSScreen();
     if (!screenBuffer) {
         OSFatal("Failed to alloc memory for screen");
@@ -81,44 +72,59 @@ int32_t handleMenuScreen(std::string &configPath, int32_t autobootOptionInput, b
     DrawUtils::initBuffers(screenBuffer, tvBufferSize, (void *) ((uint32_t) screenBuffer + tvBufferSize), drcBufferSize);
     DrawUtils::initFont();
 
-    uint32_t selected = autobootOptionInput > 0 ? autobootOptionInput : 0;
-    int autoboot      = autobootOptionInput;
-    bool redraw       = true;
+    int32_t selectedIndex = autobootOptionInput > 0 ? autobootOptionInput : 0;
+    int autobootIndex     = autobootOptionInput;
+
+    // "Convert" id to index
+    int32_t offset = 0;
+    for (auto &item : menu) {
+        if ((uint32_t) selectedIndex == item.first) {
+            selectedIndex = offset;
+            break;
+        }
+        offset++;
+    }
+    if (autobootIndex > 0) {
+        offset = 0;
+        for (auto &item : menu) {
+            if ((uint32_t) autobootIndex == item.first) {
+                autobootIndex = offset;
+                break;
+            }
+            offset++;
+        }
+    }
+
+    bool redraw = true;
     while (true) {
         VPADStatus vpad{};
         VPADRead(VPAD_CHAN_0, &vpad, 1, nullptr);
 
         if (vpad.trigger & VPAD_BUTTON_UP) {
-            if (selected > 0) {
-                selected--;
-                if (!showHBL && selected == BOOT_OPTION_HOMEBREW_LAUNCHER) {
-                    selected--;
-                }
-                if (!showvHBL && selected == BOOT_OPTION_VWII_HOMEBREW_CHANNEL) {
-                    selected--;
-                }
+            selectedIndex--;
 
-                redraw = true;
+            if (selectedIndex < 0) {
+                selectedIndex = 0;
             }
+
+            redraw = true;
         } else if (vpad.trigger & VPAD_BUTTON_DOWN) {
-            if (selected < sizeof(menu_options) / sizeof(char *) - 1) {
-                selected++;
-                if (!showHBL && selected == BOOT_OPTION_HOMEBREW_LAUNCHER) {
-                    selected++;
-                }
-                if (!showvHBL && selected == BOOT_OPTION_VWII_HOMEBREW_CHANNEL) {
-                    selected++;
+            if (!menu.empty()) {
+                selectedIndex++;
+
+                if ((uint32_t) selectedIndex >= menu.size()) {
+                    selectedIndex = menu.size() - 1;
                 }
                 redraw = true;
             }
         } else if (vpad.trigger & VPAD_BUTTON_A) {
             break;
         } else if (vpad.trigger & VPAD_BUTTON_X) {
-            autoboot = -1;
-            redraw   = true;
+            autobootIndex = -1;
+            redraw        = true;
         } else if (vpad.trigger & VPAD_BUTTON_Y) {
-            autoboot = selected;
-            redraw   = true;
+            autobootIndex = selectedIndex;
+            redraw        = true;
         }
 
         if (redraw) {
@@ -127,22 +133,18 @@ int32_t handleMenuScreen(std::string &configPath, int32_t autobootOptionInput, b
 
             // draw buttons
             uint32_t index = 8 + 24 + 8 + 4;
-            for (uint32_t i = 0; i < sizeof(menu_options) / sizeof(char *); i++) {
-                if (!showHBL && i == BOOT_OPTION_HOMEBREW_LAUNCHER) {
-                    continue;
-                }
-                if (!showvHBL && i == BOOT_OPTION_VWII_HOMEBREW_CHANNEL) {
-                    continue;
-                }
-                if (i == selected) {
+            for (uint32_t i = 0; i < menu.size(); i++) {
+                if (i == (uint32_t) selectedIndex) {
                     DrawUtils::drawRect(16, index, SCREEN_WIDTH - 16 * 2, 44, 4, COLOR_BORDER_HIGHLIGHTED);
                 } else {
-                    DrawUtils::drawRect(16, index, SCREEN_WIDTH - 16 * 2, 44, 2, (i == (uint32_t) autoboot) ? COLOR_AUTOBOOT : COLOR_BORDER);
+                    DrawUtils::drawRect(16, index, SCREEN_WIDTH - 16 * 2, 44, 2, (i == (uint32_t) autobootIndex) ? COLOR_AUTOBOOT : COLOR_BORDER);
                 }
 
+                std::string curName = std::next(menu.begin(), i)->second;
+
                 DrawUtils::setFontSize(24);
-                DrawUtils::setFontColor((i == (uint32_t) autoboot) ? COLOR_AUTOBOOT : COLOR_TEXT);
-                DrawUtils::print(16 * 2, index + 8 + 24, menu_options[i]);
+                DrawUtils::setFontColor((i == (uint32_t) autobootIndex) ? COLOR_AUTOBOOT : COLOR_TEXT);
+                DrawUtils::print(16 * 2, index + 8 + 24, curName.c_str());
                 index += 42 + 8;
             }
 
@@ -178,6 +180,16 @@ int32_t handleMenuScreen(std::string &configPath, int32_t autobootOptionInput, b
     GX2Init(nullptr);
 
     free(screenBuffer);
+
+    int32_t selected = 0;
+    int32_t autoboot = 0;
+    // convert index to key
+    if (selectedIndex > 0 && (uint32_t) selectedIndex < menu.size()) {
+        selected = std::next(menu.begin(), selectedIndex)->first;
+    }
+    if (autobootIndex > 0 && (uint32_t) autobootIndex < menu.size()) {
+        autoboot = std::next(menu.begin(), autobootIndex)->first;
+    }
 
     if (autoboot != autobootOptionInput) {
         writeAutobootOption(configPath, autoboot);
