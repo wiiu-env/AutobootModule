@@ -69,7 +69,7 @@ void writeAutobootOption(std::string &configPath, int32_t autobootOption) {
     }
 }
 
-int32_t handleMenuScreen(std::string &configPath, int32_t autobootOptionInput, bool showHBL) {
+int32_t handleMenuScreen(std::string &configPath, int32_t autobootOptionInput, bool showHBL, bool showvHBL) {
     auto screenBuffer = DrawUtils::InitOSScreen();
     if (!screenBuffer) {
         OSFatal("Failed to alloc memory for screen");
@@ -94,6 +94,9 @@ int32_t handleMenuScreen(std::string &configPath, int32_t autobootOptionInput, b
                 if (!showHBL && selected == BOOT_OPTION_HOMEBREW_LAUNCHER) {
                     selected--;
                 }
+                if (!showvHBL && selected == BOOT_OPTION_VWII_HOMEBREW_CHANNEL) {
+                    selected--;
+                }
 
                 redraw = true;
             }
@@ -101,6 +104,9 @@ int32_t handleMenuScreen(std::string &configPath, int32_t autobootOptionInput, b
             if (selected < sizeof(menu_options) / sizeof(char *) - 1) {
                 selected++;
                 if (!showHBL && selected == BOOT_OPTION_HOMEBREW_LAUNCHER) {
+                    selected++;
+                }
+                if (!showvHBL && selected == BOOT_OPTION_VWII_HOMEBREW_CHANNEL) {
                     selected++;
                 }
                 redraw = true;
@@ -123,6 +129,9 @@ int32_t handleMenuScreen(std::string &configPath, int32_t autobootOptionInput, b
             uint32_t index = 8 + 24 + 8 + 4;
             for (uint32_t i = 0; i < sizeof(menu_options) / sizeof(char *); i++) {
                 if (!showHBL && i == BOOT_OPTION_HOMEBREW_LAUNCHER) {
+                    continue;
+                }
+                if (!showvHBL && i == BOOT_OPTION_VWII_HOMEBREW_CHANNEL) {
                     continue;
                 }
                 if (i == selected) {
