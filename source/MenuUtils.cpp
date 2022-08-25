@@ -69,7 +69,7 @@ void writeAutobootOption(std::string &configPath, int32_t autobootOption) {
     }
 }
 
-int32_t handleMenuScreen(std::string &configPath, int32_t autobootOptionInput) {
+int32_t handleMenuScreen(std::string &configPath, int32_t autobootOptionInput, bool showHBL) {
     auto screenBuffer = DrawUtils::InitOSScreen();
     if (!screenBuffer) {
         OSFatal("Failed to alloc memory for screen");
@@ -91,11 +91,18 @@ int32_t handleMenuScreen(std::string &configPath, int32_t autobootOptionInput) {
         if (vpad.trigger & VPAD_BUTTON_UP) {
             if (selected > 0) {
                 selected--;
+                if (!showHBL && selected == BOOT_OPTION_HOMEBREW_LAUNCHER) {
+                    selected--;
+                }
+
                 redraw = true;
             }
         } else if (vpad.trigger & VPAD_BUTTON_DOWN) {
             if (selected < sizeof(menu_options) / sizeof(char *) - 1) {
                 selected++;
+                if (!showHBL && selected == BOOT_OPTION_HOMEBREW_LAUNCHER) {
+                    selected++;
+                }
                 redraw = true;
             }
         } else if (vpad.trigger & VPAD_BUTTON_A) {
@@ -115,6 +122,9 @@ int32_t handleMenuScreen(std::string &configPath, int32_t autobootOptionInput) {
             // draw buttons
             uint32_t index = 8 + 24 + 8 + 4;
             for (uint32_t i = 0; i < sizeof(menu_options) / sizeof(char *); i++) {
+                if (!showHBL && i == BOOT_OPTION_HOMEBREW_LAUNCHER) {
+                    continue;
+                }
                 if (i == selected) {
                     DrawUtils::drawRect(16, index, SCREEN_WIDTH - 16 * 2, 44, 4, COLOR_BORDER_HIGHLIGHTED);
                 } else {
