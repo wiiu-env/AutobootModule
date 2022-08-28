@@ -145,7 +145,6 @@ uint64_t getVWiiHBLTitleId() {
     } else {
         DEBUG_FUNCTION_LINE_ERR("Failed to add FSAClient");
     }
-    DEBUG_FUNCTION_LINE_ERR("%016llX", titleId);
     return titleId;
 }
 

@@ -181,13 +181,13 @@ int32_t handleMenuScreen(std::string &configPath, int32_t autobootOptionInput, c
 
     free(screenBuffer);
 
-    int32_t selected = 0;
-    int32_t autoboot = 0;
+    int32_t selected = -1;
+    int32_t autoboot = -1;
     // convert index to key
-    if (selectedIndex > 0 && (uint32_t) selectedIndex < menu.size()) {
+    if (selectedIndex >= 0 && (uint32_t) selectedIndex < menu.size()) {
         selected = std::next(menu.begin(), selectedIndex)->first;
     }
-    if (autobootIndex > 0 && (uint32_t) autobootIndex < menu.size()) {
+    if (autobootIndex >= 0 && (uint32_t) autobootIndex < menu.size()) {
         autoboot = std::next(menu.begin(), autobootIndex)->first;
     }
 
