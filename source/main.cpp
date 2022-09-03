@@ -109,6 +109,6 @@ int32_t main(int32_t argc, char **argv) {
     }
 
     deinitLogging();
-    Mocha_DeinitLibrary();
+    Mocha_DeInitLibrary();
     return 0;
 }
