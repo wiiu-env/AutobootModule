@@ -8,9 +8,12 @@
 #include <string>
 #include <vector>
 
+#define UPDATE_SKIP_PATH         "fs:/vol/external01/wiiu/environments/skipUpdateWarn"
+
 #define COLOR_WHITE              Color(0xffffffff)
 #define COLOR_BLACK              Color(0, 0, 0, 255)
 #define COLOR_BACKGROUND         COLOR_BLACK
+#define COLOR_BACKGROUND_WARN    Color(255, 40, 0, 255)
 #define COLOR_TEXT               COLOR_WHITE
 #define COLOR_TEXT2              Color(0xB3ffffff)
 #define COLOR_AUTOBOOT           Color(0xaeea00ff)
@@ -31,3 +34,5 @@ void writeAutobootOption(std::string &configPath, int32_t autobootOption);
 int32_t handleMenuScreen(std::string &configPath, int32_t autobootOptionInput, const std::map<uint32_t, std::string> &menu);
 
 nn::act::SlotNo handleAccountSelectScreen(const std::vector<std::shared_ptr<AccountInfo>> &data);
+
+void handleUpdateWarningScreen();
