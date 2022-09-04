@@ -329,3 +329,74 @@ nn::act::SlotNo handleAccountSelectScreen(const std::vector<std::shared_ptr<Acco
 
     return resultSlot;
 }
+
+void handleUpdateWarningScreen() {
+    FILE *f = fopen(UPDATE_SKIP_PATH, "r");
+    if (f) {
+        DEBUG_FUNCTION_LINE("Skipping update warning screen");
+        fclose(f);
+        return;
+    }
+
+    auto screenBuffer = DrawUtils::InitOSScreen();
+    if (!screenBuffer) {
+        OSFatal("Failed to alloc memory for screen");
+    }
+
+    uint32_t tvBufferSize  = OSScreenGetBufferSizeEx(SCREEN_TV);
+    uint32_t drcBufferSize = OSScreenGetBufferSizeEx(SCREEN_DRC);
+
+    DrawUtils::initBuffers(screenBuffer, tvBufferSize, (void *) ((uint32_t) screenBuffer + tvBufferSize), drcBufferSize);
+    DrawUtils::initFont();
+
+    DrawUtils::beginDraw();
+    DrawUtils::clear(COLOR_BACKGROUND_WARN);
+
+    DrawUtils::setFontColor(COLOR_TEXT);
+
+    // draw top bar
+    DrawUtils::setFontSize(48);
+    const char *title = "! Warning !";
+    DrawUtils::print(SCREEN_WIDTH / 2 + DrawUtils::getTextWidth(title) / 2, 48 + 8, title, true);
+    DrawUtils::drawRectFilled(8, 48 + 8 + 16, SCREEN_WIDTH - 8 * 2, 3, COLOR_WHITE);
+
+    DrawUtils::setFontSize(24);
+
+    const char *message = "The update folder currently exists.";
+    DrawUtils::print(SCREEN_WIDTH / 2 + DrawUtils::getTextWidth(message) / 2, SCREEN_HEIGHT / 2 - 24, message, true);
+    message = "Your system might not be blocking updates properly!";
+    DrawUtils::print(SCREEN_WIDTH / 2 + DrawUtils::getTextWidth(message) / 2, SCREEN_HEIGHT / 2 + 0, message, true);
+    message = "See https://wiiu.hacks.guide/#/block-updates for more information.";
+    DrawUtils::print(SCREEN_WIDTH / 2 + DrawUtils::getTextWidth(message) / 2, SCREEN_HEIGHT / 2 + 24, message, true);
+
+    // draw bottom bar
+    DrawUtils::drawRectFilled(8, SCREEN_HEIGHT - 24 - 8 - 4, SCREEN_WIDTH - 8 * 2, 3, COLOR_WHITE);
+    DrawUtils::setFontSize(18);
+    const char *exitHints = "\ue000 Continue / \ue001 Don't show this again";
+    DrawUtils::print(SCREEN_WIDTH / 2 + DrawUtils::getTextWidth(exitHints) / 2, SCREEN_HEIGHT - 8, exitHints, true);
+
+    DrawUtils::endDraw();
+
+    while (true) {
+        VPADStatus vpad{};
+        VPADRead(VPAD_CHAN_0, &vpad, 1, nullptr);
+
+        if (vpad.trigger & VPAD_BUTTON_A) {
+            break;
+        } else if (vpad.trigger & VPAD_BUTTON_B) {
+            f = fopen(UPDATE_SKIP_PATH, "w");
+            if (f) {
+                fputs("If this file exists, the Autoboot Module will not warn you about not blocking updates", f);
+                fclose(f);
+            }
+            break;
+        }
+    }
+
+    DrawUtils::clear(COLOR_BLACK);
+    DrawUtils::endDraw();
+
+    DrawUtils::deinitFont();
+
+    free(screenBuffer);
+}

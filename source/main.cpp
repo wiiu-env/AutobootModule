@@ -5,6 +5,7 @@
 #include "StorageUtils.h"
 #include "logger.h"
 #include <coreinit/debug.h>
+#include <coreinit/filesystem_fsa.h>
 #include <gx2/state.h>
 #include <malloc.h>
 #include <mocha/mocha.h>
@@ -41,6 +42,20 @@ int32_t main(int32_t argc, char **argv) {
 
     if (Mocha_InitLibrary() != MOCHA_RESULT_SUCCESS) {
         OSFatal("AutobootModule: Mocha_InitLibrary failed");
+    }
+
+    FSAInit();
+    auto client = FSAAddClient(nullptr);
+    if (client > 0) {
+        if (Mocha_UnlockFSClientEx(client) == MOCHA_RESULT_SUCCESS) {
+            // test if the update folder exists
+            FSStat stat;
+            if (FSAGetStat(client, "/vol/storage_mlc01/sys/update", &stat) >= 0) {
+                handleUpdateWarningScreen();
+            }
+        }
+
+        FSADelClient(client);
     }
 
     bool showvHBL          = getVWiiHBLTitleId() != 0;
