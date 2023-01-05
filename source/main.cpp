@@ -49,8 +49,9 @@ int32_t main(int32_t argc, char **argv) {
     if (client > 0) {
         if (Mocha_UnlockFSClientEx(client) == MOCHA_RESULT_SUCCESS) {
             // test if the update folder exists
-            FSStat stat;
-            if (FSAGetStat(client, "/vol/storage_mlc01/sys/update", &stat) >= 0) {
+            FSADirectoryHandle dirHandle;
+            if (FSAOpenDir(client, "/vol/storage_mlc01/sys/update", &dirHandle) >= 0) {
+                FSACloseDir(client, dirHandle);
                 handleUpdateWarningScreen();
             }
         }
