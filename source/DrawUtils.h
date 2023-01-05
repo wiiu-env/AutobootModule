@@ -1,5 +1,6 @@
 #pragma once
 
+#include "schrift.h"
 #include <cstdint>
 
 // visible screen sizes
@@ -7,7 +8,7 @@
 #define SCREEN_HEIGHT 480
 
 union Color {
-    Color(uint32_t color) {
+    explicit Color(uint32_t color) {
         this->color = color;
     }
 
@@ -18,7 +19,7 @@ union Color {
         this->a = a;
     }
 
-    uint32_t color;
+    uint32_t color{};
     struct {
         uint8_t r;
         uint8_t g;
@@ -51,7 +52,7 @@ public:
 
     static void drawPNG(uint32_t x, uint32_t y, const uint8_t *data);
 
-    static void initFont();
+    static bool initFont();
 
     static void deinitFont();
 

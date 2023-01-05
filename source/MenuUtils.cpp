@@ -70,7 +70,9 @@ int32_t handleMenuScreen(std::string &configPath, int32_t autobootOptionInput, c
     uint32_t drcBufferSize = OSScreenGetBufferSizeEx(SCREEN_DRC);
 
     DrawUtils::initBuffers(screenBuffer, tvBufferSize, (void *) ((uint32_t) screenBuffer + tvBufferSize), drcBufferSize);
-    DrawUtils::initFont();
+    if (!DrawUtils::initFont()) {
+        OSFatal("Failed to init font");
+    }
 
     int32_t selectedIndex = autobootOptionInput > 0 ? autobootOptionInput : 0;
     int autobootIndex     = autobootOptionInput;
@@ -209,7 +211,9 @@ nn::act::SlotNo handleAccountSelectScreen(const std::vector<std::shared_ptr<Acco
     uint32_t drcBufferSize = OSScreenGetBufferSizeEx(SCREEN_DRC);
 
     DrawUtils::initBuffers(screenBuffer, tvBufferSize, (void *) ((uint32_t) screenBuffer + tvBufferSize), drcBufferSize);
-    DrawUtils::initFont();
+    if (!DrawUtils::initFont()) {
+        OSFatal("Failed to init font");
+    }
 
     int32_t selected = 0;
     bool redraw      = true;
@@ -347,7 +351,9 @@ void handleUpdateWarningScreen() {
     uint32_t drcBufferSize = OSScreenGetBufferSizeEx(SCREEN_DRC);
 
     DrawUtils::initBuffers(screenBuffer, tvBufferSize, (void *) ((uint32_t) screenBuffer + tvBufferSize), drcBufferSize);
-    DrawUtils::initFont();
+    if (!DrawUtils::initFont()) {
+        OSFatal("Failed to init font");
+    }
 
     DrawUtils::beginDraw();
     DrawUtils::clear(COLOR_BACKGROUND_WARN);
