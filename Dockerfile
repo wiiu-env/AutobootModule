@@ -1,5 +1,5 @@
-FROM wiiuenv/devkitppc:20220806
+FROM wiiuenv/devkitppc:20221228
 
-COPY --from=wiiuenv/libmocha:20220903 /artifacts $DEVKITPRO
+COPY --from=wiiuenv/libmocha:20220919 /artifacts $DEVKITPRO
 
 WORKDIR project
