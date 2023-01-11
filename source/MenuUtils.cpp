@@ -3,9 +3,9 @@
 #include "DrawUtils.h"
 #include "icon_png.h"
 #include "logger.h"
+#include "version.h"
 #include <coreinit/debug.h>
 #include <coreinit/screen.h>
-#include <cstdint>
 #include <cstring>
 #include <gx2/state.h>
 #include <malloc.h>
@@ -14,6 +14,8 @@
 #include <string>
 #include <vector>
 #include <vpad/input.h>
+
+#define AUTOBOOT_MODULE_VERSION "v0.1.0"
 
 const char *autoboot_config_strings[] = {
         "wiiu_menu",
@@ -157,6 +159,8 @@ int32_t handleMenuScreen(std::string &configPath, int32_t autobootOptionInput, c
             DrawUtils::drawPNG(16, 2, icon_png);
             DrawUtils::print(64 + 2, 6 + 24, "Boot Selector");
             DrawUtils::drawRectFilled(8, 8 + 24 + 4, SCREEN_WIDTH - 8 * 2, 3, COLOR_WHITE);
+            DrawUtils::setFontSize(16);
+            DrawUtils::print(SCREEN_WIDTH - 16, 6 + 24, AUTOBOOT_MODULE_VERSION AUTOBOOT_MODULE_VERSION_EXTRA, true);
 
             // draw bottom bar
             DrawUtils::drawRectFilled(8, SCREEN_HEIGHT - 24 - 8 - 4, SCREEN_WIDTH - 8 * 2, 3, COLOR_WHITE);
