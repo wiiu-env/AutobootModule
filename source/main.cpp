@@ -9,6 +9,7 @@
 #include <gx2/state.h>
 #include <malloc.h>
 #include <mocha/mocha.h>
+#include <sndcore2/core.h>
 #include <string>
 #include <sys/stat.h>
 #include <vpad/input.h>
@@ -29,6 +30,7 @@ void clearScreen() {
 int32_t main(int32_t argc, char **argv) {
     initLogging();
     DEBUG_FUNCTION_LINE("Hello from Autoboot Module");
+    AXInit();
 
     // Clear screen to avoid screen corruptions when loading the Wii U Menu
     clearScreen();
@@ -36,6 +38,7 @@ int32_t main(int32_t argc, char **argv) {
     initExternalStorage();
 
     if (getQuickBoot()) {
+        AXQuit();
         deinitLogging();
         return 0;
     }
@@ -124,7 +127,9 @@ int32_t main(int32_t argc, char **argv) {
         bootWiiUMenu();
     }
 
-    deinitLogging();
+    AXQuit();
     Mocha_DeInitLibrary();
+    deinitLogging();
+
     return 0;
 }
