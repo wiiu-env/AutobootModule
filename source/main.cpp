@@ -61,9 +61,13 @@ int32_t main(int32_t argc, char **argv) {
                 FSACloseDir(client, dirHandle);
                 handleUpdateWarningScreen();
             }
+        } else {
+            DEBUG_FUNCTION_LINE_ERR("Failed to unlock FSA Client");
         }
 
         FSADelClient(client);
+    } else {
+        DEBUG_FUNCTION_LINE_ERR("Failed to create FSA Client");
     }
 
     bool showvHBL          = getVWiiHBLTitleId() != 0;
