@@ -47,6 +47,10 @@ int32_t main(int32_t argc, char **argv) {
         OSFatal("AutobootModule: Mocha_InitLibrary failed");
     }
 
+    VPADStatus vpad{};
+    // Buffer vpad read.
+    VPADRead(VPAD_CHAN_0, &vpad, 1, nullptr);
+
     FSAInit();
     auto client = FSAAddClient(nullptr);
     if (client > 0) {
@@ -76,9 +80,6 @@ int32_t main(int32_t argc, char **argv) {
     }
 
     int32_t bootSelection = readAutobootOption(configPath);
-
-    VPADStatus vpad{};
-    VPADRead(VPAD_CHAN_0, &vpad, 1, nullptr);
 
     std::map<uint32_t, std::string> menu;
     menu[BOOT_OPTION_WII_U_MENU] = "Wii U Menu";
