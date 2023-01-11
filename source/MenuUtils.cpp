@@ -372,7 +372,7 @@ void handleUpdateWarningScreen() {
 
     DrawUtils::setFontSize(24);
 
-    const char *message = "The update folder currently exists.";
+    const char *message = "The update folder currently exists and is not a file.";
     DrawUtils::print(SCREEN_WIDTH / 2 + DrawUtils::getTextWidth(message) / 2, SCREEN_HEIGHT / 2 - 24, message, true);
     message = "Your system might not be blocking updates properly!";
     DrawUtils::print(SCREEN_WIDTH / 2 + DrawUtils::getTextWidth(message) / 2, SCREEN_HEIGHT / 2 + 0, message, true);
