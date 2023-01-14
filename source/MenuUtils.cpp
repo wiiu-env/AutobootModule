@@ -396,7 +396,11 @@ void handleUpdateWarningScreen() {
         } else if (vpad.trigger & VPAD_BUTTON_B) {
             f = fopen(UPDATE_SKIP_PATH, "w");
             if (f) {
-                fputs("If this file exists, the Autoboot Module will not warn you about not blocking updates", f);
+                // It's **really** important to have this text on the stack.
+                // If it's read from the .rodata section the fwrite will softlock the console because the OSEffectiveToPhysical returns NULL for
+                // everything between 0x00800000 - 0x01000000 at this stage.
+                const char text[] = "If this file exists, the Autoboot Module will not warn you about not blocking updates";
+                fputs(text, f);
                 fclose(f);
             }
             break;
