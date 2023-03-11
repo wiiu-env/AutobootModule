@@ -10,4 +10,8 @@ void bootvWiiMenu();
 
 void bootHomebrewChannel();
 
+void bootNintendont();
+
 uint64_t getVWiiHBLTitleId();
+
+uint64_t getVWiiNintendontTitleId();

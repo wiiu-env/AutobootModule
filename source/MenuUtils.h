@@ -25,6 +25,7 @@ enum {
     BOOT_OPTION_HOMEBREW_LAUNCHER,
     BOOT_OPTION_VWII_SYSTEM_MENU,
     BOOT_OPTION_VWII_HOMEBREW_CHANNEL,
+    BOOT_OPTION_VWII_NINTENDONT,
 };
 
 int32_t readAutobootOption(std::string &configPath);

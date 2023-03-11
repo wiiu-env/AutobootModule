@@ -148,8 +148,46 @@ uint64_t getVWiiHBLTitleId() {
     return titleId;
 }
 
+uint64_t getVWiiNintendontTitleId() {
+    // fall back to booting the vWii system menu if anything fails
+    uint64_t titleId = 0;
+
+    FSAInit();
+    auto client = FSAAddClient(nullptr);
+    if (client > 0) {
+        if (Mocha_UnlockFSClientEx(client) == MOCHA_RESULT_SUCCESS) {
+            // mount the slccmpt
+            if (FSAMount(client, "/dev/slccmpt01", "/vol/storage_slccmpt01", FSA_MOUNT_FLAG_GLOBAL_MOUNT, nullptr, 0) >= 0) {
+                FSStat stat;
+
+                // test if the OHBC or HBC is installed
+                if (FSAGetStat(client, "/vol/storage_slccmpt01/title/00010001/57574e44/content/00000000.app", &stat) >= 0) {
+                    titleId = 0x0001000157574E44L; // 'Nintendont'
+                } else {
+                    DEBUG_FUNCTION_LINE("Cannot find Nintendont");
+                }
+                FSAUnmount(client, "/vol/storage_slccmpt01", static_cast<FSAUnmountFlags>(2));
+            } else {
+                DEBUG_FUNCTION_LINE_ERR("Failed to mount slccmpt01");
+            }
+        } else {
+            DEBUG_FUNCTION_LINE_ERR("Failed to unlock FSClient");
+        }
+        FSADelClient(client);
+    } else {
+        DEBUG_FUNCTION_LINE_ERR("Failed to add FSAClient");
+    }
+    return titleId;
+}
+
 void bootHomebrewChannel() {
     uint64_t titleId = getVWiiHBLTitleId();
+    DEBUG_FUNCTION_LINE("Launching vWii title %016llx", titleId);
+    launchvWiiTitle(titleId);
+}
+
+void bootNintendont() {
+    uint64_t titleId = getVWiiNintendontTitleId();
     DEBUG_FUNCTION_LINE("Launching vWii title %016llx", titleId);
     launchvWiiTitle(titleId);
 }

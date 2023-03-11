@@ -71,6 +71,7 @@ int32_t main(int32_t argc, char **argv) {
     }
 
     bool showvHBL          = getVWiiHBLTitleId() != 0;
+    bool showNintendont    = getVWiiNintendontTitleId() != 0;
     bool showHBL           = false;
     std::string configPath = "fs:/vol/external01/wiiu/autoboot.cfg";
     if (argc >= 1) {
@@ -94,10 +95,14 @@ int32_t main(int32_t argc, char **argv) {
     if (showvHBL) {
         menu[BOOT_OPTION_VWII_HOMEBREW_CHANNEL] = "vWii Homebrew Channel";
     }
+    if (showNintendont) {
+        menu[BOOT_OPTION_VWII_NINTENDONT] = "vWii Nintendont";
+    }
 
     if ((bootSelection == -1) ||
         (bootSelection == BOOT_OPTION_HOMEBREW_LAUNCHER && !showHBL) ||
         (bootSelection == BOOT_OPTION_VWII_HOMEBREW_CHANNEL && !showvHBL) ||
+        (bootSelection == BOOT_OPTION_VWII_NINTENDONT && !showNintendont) ||
         (vpad.hold & VPAD_BUTTON_PLUS)) {
         bootSelection = handleMenuScreen(configPath, bootSelection, menu);
     }
@@ -123,6 +128,13 @@ int32_t main(int32_t argc, char **argv) {
                     break;
                 }
                 bootHomebrewChannel();
+                break;
+            case BOOT_OPTION_VWII_NINTENDONT:
+                if (!showNintendont) {
+                    bootvWiiMenu();
+                    break;
+                }
+                bootNintendont();
                 break;
             default:
                 bootWiiUMenu();
