@@ -11,18 +11,17 @@
 #include <malloc.h>
 #include <memory>
 #include <nn/act/client_cpp.h>
+#include <fstream>
+#include <sstream>
 #include <string>
 #include <vector>
 #include <vpad/input.h>
 
 #define AUTOBOOT_MODULE_VERSION "v0.1.2"
 
-const char *autoboot_config_strings[] = {
-        "wiiu_menu",
-        "homebrew_launcher",
-        "vwii_system_menu",
-        "vwii_homebrew_channel",
-};
+// Initialize with the autoboot_base_config_strings data
+std::vector<std::string> autoboot_config_strings = { autoboot_base_config_strings.begin(), autoboot_base_config_strings.end() };
+std::vector<BootOption> custom_boot_options;
 
 template<typename... Args>
 std::string string_format(const std::string &format, Args... args) {
@@ -33,36 +32,90 @@ std::string string_format(const std::string &format, Args... args) {
     return std::string(buf.get(), buf.get() + size - 1); // We don't want the '\0' inside
 }
 
-int32_t readAutobootOption(std::string &configPath) {
-    FILE *f = fopen(configPath.c_str(), "r");
-    if (f) {
-        char buf[128]{};
-        fgets(buf, sizeof(buf), f);
-        fclose(f);
+std::string trim(const std::string& str) {
+    std::string result;
+    for (auto& ch : str) {
+        if (!std::isspace(ch)) {
+            result += ch;
+        }
+    }
 
-        for (uint32_t i = 0; i < sizeof(autoboot_config_strings) / sizeof(char *); i++) {
-            if (strncmp(autoboot_config_strings[i], buf, strlen(autoboot_config_strings[i])) == 0) {
+    return result;
+}
+
+void readBootOptionsFromSD(const std::string &configPath) {
+    std::ifstream fileStream(configPath.c_str(), std::ios::in);
+    if (fileStream.is_open()) {
+        DEBUG_FUNCTION_LINE("bootOptions.cfg open");
+
+        constexpr size_t bufSize{ 256 };
+        for (char line[bufSize]; fileStream.getline(line, bufSize);) {
+            DEBUG_FUNCTION_LINE("  Line \"%s\"", line);
+            std::istringstream parsingLine{std::string{line}};
+            memset(line, 0, bufSize);
+
+            std::vector<std::string> tokens;
+            for (char tmp[bufSize]; parsingLine.getline(tmp, bufSize, ',');) {
+                DEBUG_FUNCTION_LINE("    Token \"%s\"", tmp);
+                tokens.push_back(trim(tmp));
+                memset(tmp, 0, bufSize);
+            }
+
+            if (tokens.size() == 3)
+            {
+                const std::string subSystem{ tokens[2] };
+                const std::string vWiiStr{ "vwii" };
+                const bool vWii{ std::equal(subSystem.begin(), subSystem.end(),
+                    vWiiStr.begin(), vWiiStr.end(), [](unsigned char a, unsigned char b) {
+                        return std::tolower(a) == std::tolower(b);
+                    })
+                };
+
+                custom_boot_options.push_back(BootOption{tokens[0], tokens[1], vWii});
+            }
+        }
+    } else {
+        DEBUG_FUNCTION_LINE("Failed to open bootOptions.cfg");
+    }
+}
+
+int32_t readAutobootOption(const std::string &configPath) {
+    std::ifstream fileStream(configPath.c_str(), std::ios::in);
+    if (fileStream.is_open()) {
+        std::string readOption;
+        fileStream >> readOption;
+
+        for (size_t i = 0; i < autoboot_config_strings.size(); ++i) {
+            if (autoboot_config_strings[i] == readOption) {
                 return i;
             }
         }
+
+        for (size_t i = 0; i < custom_boot_options.size(); ++i) {
+            if (custom_boot_options[i].title == readOption) {
+                return BOOT_OPTION_MAX_OPTIONS + i;
+            }
+        }
     }
+
     return -1;
 }
 
-void writeAutobootOption(std::string &configPath, int32_t autobootOption) {
-    FILE *f = fopen(configPath.c_str(), "w");
-    if (f) {
-        if (autobootOption >= 0) {
-            fputs(autoboot_config_strings[autobootOption], f);
+void writeAutobootOption(const std::string &configPath, int32_t autobootOption) {
+    const int32_t customAutoBootOption{ autobootOption - BOOT_OPTION_MAX_OPTIONS };
+    std::ofstream outStream(configPath.c_str(), std::ios::out);
+    if (outStream.is_open()) {
+        if (customAutoBootOption >= 0) {
+            outStream << custom_boot_options[customAutoBootOption].title;
+        } else if (autobootOption >= 0) {
+            outStream << autoboot_config_strings[autobootOption];
         } else {
-            fputs("none", f);
+            outStream << "none";
         }
-
-        fclose(f);
     }
 }
 
-int32_t handleMenuScreen(std::string &configPath, int32_t autobootOptionInput, const std::map<uint32_t, std::string> &menu) {
+int32_t handleMenuScreen(const std::string &configPath, int32_t autobootOptionInput, const std::map<uint32_t, std::string> &menu) {
     auto screenBuffer = DrawUtils::InitOSScreen();
     if (!screenBuffer) {
         OSFatal("Failed to alloc memory for screen");

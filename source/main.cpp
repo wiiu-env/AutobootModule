@@ -81,6 +81,10 @@ int32_t main(int32_t argc, char **argv) {
         if (stat(hblInstallerPath.c_str(), &st) >= 0) {
             showHBL = true;
         }
+    
+        readBootOptionsFromSD(std::string(argv[0]) + "/bootOptions.cfg");
+    } else {
+        readBootOptionsFromSD("fs:/vol/external01/wiiu/bootOptions.cfg");
     }
 
     int32_t bootSelection = readAutobootOption(configPath);
@@ -95,6 +99,11 @@ int32_t main(int32_t argc, char **argv) {
         menu[BOOT_OPTION_VWII_HOMEBREW_CHANNEL] = "vWii Homebrew Channel";
     }
 
+    for (size_t i = 0; i < custom_boot_options.size(); ++i) {
+        const BootOption& option{ custom_boot_options[i] };
+        menu[BOOT_OPTION_MAX_OPTIONS + i] = option.title + " (" + (option.vWii ? "vWii" : "WiiU") + " " + option.hexId + ")";
+    }
+
     if ((bootSelection == -1) ||
         (bootSelection == BOOT_OPTION_HOMEBREW_LAUNCHER && !showHBL) ||
         (bootSelection == BOOT_OPTION_VWII_HOMEBREW_CHANNEL && !showvHBL) ||
@@ -102,7 +111,22 @@ int32_t main(int32_t argc, char **argv) {
         bootSelection = handleMenuScreen(configPath, bootSelection, menu);
     }
 
-    if (bootSelection >= 0) {
+    const int32_t customBootSelection{bootSelection - BOOT_OPTION_MAX_OPTIONS};
+    if (customBootSelection >= 0) {
+        if (static_cast<size_t>(customBootSelection) < custom_boot_options.size()) {
+            const BootOption &selectedOption{custom_boot_options[customBootSelection]};
+            if (selectedOption.vWii) {
+                const uint64_t titleId = getVWiiTitleId(selectedOption.hexId);
+                DEBUG_FUNCTION_LINE("Launching vWii title %016llx", titleId);
+                launchvWiiTitle(titleId);
+            } else {
+                DEBUG_FUNCTION_LINE("Launching WiiU title %s", selectedOption.hexId);
+                bootWiiuTitle(selectedOption.hexId);
+            }
+        } else {
+            bootWiiUMenu();
+        }
+    } else if (bootSelection >= 0) {
         switch (bootSelection) {
             case BOOT_OPTION_WII_U_MENU:
                 bootWiiUMenu();
