@@ -31,6 +31,7 @@ int32_t main(int32_t argc, char **argv) {
     initLogging();
     DEBUG_FUNCTION_LINE("Hello from Autoboot Module");
     AXInit();
+    AXQuit();
 
     // Clear screen to avoid screen corruptions when loading the Wii U Menu
     clearScreen();
@@ -38,7 +39,7 @@ int32_t main(int32_t argc, char **argv) {
     initExternalStorage();
 
     if (getQuickBoot()) {
-        AXQuit();
+
         deinitLogging();
         return 0;
     }
@@ -132,7 +133,6 @@ int32_t main(int32_t argc, char **argv) {
         bootWiiUMenu();
     }
 
-    AXQuit();
     Mocha_DeInitLibrary();
     deinitLogging();
 
