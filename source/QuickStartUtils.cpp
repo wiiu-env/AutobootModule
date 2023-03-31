@@ -105,6 +105,8 @@ bool getQuickBoot() {
         // load app launch param
         CCRSysCaffeineGetAppLaunchParam(&data);
 
+        loadConsoleAccount(data.uuid);
+
         // get launch info for id
         nn::sl::LaunchInfo info;
         auto result = database->GetLaunchInfoById(&info, data.titleId);
@@ -215,7 +217,6 @@ bool getQuickBoot() {
         auto err       = MCP_GetTitleInfo(handle, info.titleId, &titleInfo);
         MCP_Close(handle);
         if (err == 0) {
-            loadConsoleAccount(data.uuid);
             ACPAssignTitlePatch(&titleInfo);
             _SYSLaunchTitleWithStdArgsInNoSplash(info.titleId, nullptr);
             return true;
