@@ -1,6 +1,7 @@
 #include <malloc.h>
 
 #include "BootUtils.h"
+#include "MenuUtils.h"
 #include "QuickStartUtils.h"
 #include "logger.h"
 
@@ -124,8 +125,6 @@ bool getQuickBoot() {
             return false;
         }
 
-        DEBUG_FUNCTION_LINE("Trying to autoboot for titleId %016llX", info.titleId);
-
         if (info.titleId == 0x0005001010040000L ||
             info.titleId == 0x0005001010040100L ||
             info.titleId == 0x0005001010040200L) {
@@ -207,21 +206,36 @@ bool getQuickBoot() {
             return true;
         }
 
-        if (!SYSCheckTitleExists(info.titleId)) {
-            DEBUG_FUNCTION_LINE("Title %016llX doesn't exist", info.titleId);
-            return false;
+        uint64_t titleIdToLaunch = info.titleId;
+
+        switch (info.mediaType) {
+            case nn::sl::NN_SL_MEDIA_TYPE_ODD: {
+                if (!handleDiscInsertScreen(titleIdToLaunch, &titleIdToLaunch)) {
+                    DEBUG_FUNCTION_LINE("Launch Wii U Menu!");
+                    return false;
+                }
+                break;
+            }
+            default: {
+                if (!SYSCheckTitleExists(titleIdToLaunch)) {
+                    DEBUG_FUNCTION_LINE("Title %016llX doesn't exist", titleIdToLaunch);
+                    return false;
+                }
+            }
         }
 
         MCPTitleListType titleInfo;
         int32_t handle = MCP_Open();
-        auto err       = MCP_GetTitleInfo(handle, info.titleId, &titleInfo);
+        auto err       = MCP_GetTitleInfo(handle, titleIdToLaunch, &titleInfo);
         MCP_Close(handle);
         if (err == 0) {
+            DEBUG_FUNCTION_LINE("Launch %016llX", titleIdToLaunch);
             ACPAssignTitlePatch(&titleInfo);
-            _SYSLaunchTitleWithStdArgsInNoSplash(info.titleId, nullptr);
+            _SYSLaunchTitleWithStdArgsInNoSplash(titleIdToLaunch, nullptr);
             return true;
         }
 
+        DEBUG_FUNCTION_LINE("Launch Wii U Menu!");
         return false;
     } else {
         DEBUG_FUNCTION_LINE("No quick start");

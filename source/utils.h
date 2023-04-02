@@ -18,3 +18,5 @@ template<class T, class... Args>
 std::shared_ptr<T> make_shared_nothrow(Args &&...args) noexcept(noexcept(T(std::forward<Args>(args)...))) {
     return std::shared_ptr<T>(new (std::nothrow) T(std::forward<Args>(args)...));
 }
+
+bool GetTitleIdOfDisc(uint64_t *titleId, bool *discPresent);

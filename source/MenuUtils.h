@@ -36,3 +36,5 @@ int32_t handleMenuScreen(std::string &configPath, int32_t autobootOptionInput, c
 nn::act::SlotNo handleAccountSelectScreen(const std::vector<std::shared_ptr<AccountInfo>> &data);
 
 void handleUpdateWarningScreen();
+
+bool handleDiscInsertScreen(uint64_t expectedTitleId, uint64_t *titleIdToLaunch);
