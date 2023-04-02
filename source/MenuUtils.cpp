@@ -19,7 +19,7 @@
 #include <vector>
 #include <vpad/input.h>
 
-#define AUTOBOOT_MODULE_VERSION "v0.1.2"
+#define AUTOBOOT_MODULE_VERSION "v0.1.3"
 
 const char *autoboot_config_strings[] = {
         "wiiu_menu",
