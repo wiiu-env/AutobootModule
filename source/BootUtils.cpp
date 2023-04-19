@@ -12,6 +12,7 @@
 #include <nn/act.h>
 #include <nn/cmpt/cmpt.h>
 #include <padscore/kpad.h>
+#include <sstream>
 #include <string>
 #include <sysapp/launch.h>
 #include <sysapp/title.h>
@@ -36,6 +37,18 @@ void bootHomebrewLauncher() {
     handleAccountSelection();
 
     uint64_t titleId = _SYSGetSystemApplicationTitleId(SYSTEM_APP_ID_MII_MAKER);
+    _SYSLaunchTitleWithStdArgsInNoSplash(titleId, nullptr);
+}
+
+void bootWiiuTitle(const std::string &hexId) {
+    uint64_t titleId;
+    std::stringstream ss;
+    ss << std::hex << hexId;
+    ss >> titleId;
+
+    handleAccountSelection();
+
+    titleId = _SYSGetSystemApplicationTitleId(static_cast<SYSTEM_APP_ID>(titleId));
     _SYSLaunchTitleWithStdArgsInNoSplash(titleId, nullptr);
 }
 
@@ -83,7 +96,7 @@ void handleAccountSelection() {
     nn::act::Finalize();
 }
 
-static void launchvWiiTitle(uint64_t titleId) {
+void launchvWiiTitle(uint64_t titleId) {
     // we need to init kpad for cmpt
     KPADInit();
 
@@ -114,7 +127,7 @@ void bootvWiiMenu() {
     launchvWiiTitle(0);
 }
 
-uint64_t getVWiiHBLTitleId() {
+uint64_t getVWiiTitleId(const std::string& hexId) {
     // fall back to booting the vWii system menu if anything fails
     uint64_t titleId = 0;
 
@@ -126,13 +139,15 @@ uint64_t getVWiiHBLTitleId() {
             if (FSAMount(client, "/dev/slccmpt01", "/vol/storage_slccmpt01", FSA_MOUNT_FLAG_GLOBAL_MOUNT, nullptr, 0) >= 0) {
                 FSStat stat;
 
-                // test if the OHBC or HBC is installed
-                if (FSAGetStat(client, "/vol/storage_slccmpt01/title/00010001/4f484243/content/00000000.app", &stat) >= 0) {
-                    titleId = 0x000100014F484243L; // 'OHBC'
-                } else if (FSAGetStat(client, "/vol/storage_slccmpt01/title/00010001/4c554c5a/content/00000000.app", &stat) >= 0) {
-                    titleId = 0x000100014C554C5AL; // 'LULZ'
+                const std::string hexValue{ hexId.size() > 2 ? hexId.substr(2) : hexId };
+                const std::string titleString{ "/vol/storage_slccmpt01/title/00010001/" + hexValue + "/content/00000000.app" };
+                if (FSAGetStat(client, titleString.c_str(), &stat) >= 0) {
+                    std::stringstream ss;
+                    ss << std::hex << hexId;
+                    ss >> titleId;
+                    titleId |= 0x0001000100000000L;
                 } else {
-                    DEBUG_FUNCTION_LINE("Cannot find HBC");
+                    DEBUG_FUNCTION_LINE("Cannot find title 0x%s", hexId.c_str());
                 }
                 FSAUnmount(client, "/vol/storage_slccmpt01", static_cast<FSAUnmountFlags>(2));
             } else {
@@ -145,6 +160,17 @@ uint64_t getVWiiHBLTitleId() {
     } else {
         DEBUG_FUNCTION_LINE_ERR("Failed to add FSAClient");
     }
+
+    return titleId;
+}
+
+uint64_t getVWiiHBLTitleId() {
+    // Try 'OHBC' first and if it fails, try 'LULZ'
+    uint64_t titleId = getVWiiTitleId("4f484243");
+    if (titleId == 0) {
+        titleId = getVWiiTitleId("4c554c5a");
+    }
+
     return titleId;
 }
 
