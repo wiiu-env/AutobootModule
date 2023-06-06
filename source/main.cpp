@@ -1,5 +1,6 @@
 #include "BootUtils.h"
 #include "DrawUtils.h"
+#include "InputUtils.h"
 #include "MenuUtils.h"
 #include "QuickStartUtils.h"
 #include "StorageUtils.h"
@@ -9,6 +10,7 @@
 #include <gx2/state.h>
 #include <malloc.h>
 #include <mocha/mocha.h>
+#include <padscore/kpad.h>
 #include <sndcore2/core.h>
 #include <string>
 #include <sys/stat.h>
@@ -33,13 +35,14 @@ int32_t main(int32_t argc, char **argv) {
     AXInit();
     AXQuit();
 
+    InputUtils::Init();
+
     // Clear screen to avoid screen corruptions when loading the Wii U Menu
     clearScreen();
 
     initExternalStorage();
 
     if (getQuickBoot()) {
-
         deinitLogging();
         return 0;
     }
@@ -48,16 +51,12 @@ int32_t main(int32_t argc, char **argv) {
         OSFatal("AutobootModule: Mocha_InitLibrary failed");
     }
 
-    VPADStatus vpad{};
-    // Buffer vpad read.
-    VPADRead(VPAD_CHAN_0, &vpad, 1, nullptr);
-
     FSAInit();
     auto client = FSAAddClient(nullptr);
     if (client > 0) {
         if (Mocha_UnlockFSClientEx(client) == MOCHA_RESULT_SUCCESS) {
             // test if the update folder exists
-            FSADirectoryHandle dirHandle;
+            FSADirectoryHandle dirHandle{};
             if (FSAOpenDir(client, "/vol/storage_mlc01/sys/update", &dirHandle) >= 0) {
                 FSACloseDir(client, dirHandle);
                 handleUpdateWarningScreen();
@@ -70,6 +69,8 @@ int32_t main(int32_t argc, char **argv) {
     } else {
         DEBUG_FUNCTION_LINE_ERR("Failed to create FSA Client");
     }
+
+    InputUtils::InputData buttons = InputUtils::getControllerInput();
 
     bool showvHBL          = getVWiiHBLTitleId() != 0;
     bool showHBL           = false;
@@ -99,7 +100,7 @@ int32_t main(int32_t argc, char **argv) {
     if ((bootSelection == -1) ||
         (bootSelection == BOOT_OPTION_HOMEBREW_LAUNCHER && !showHBL) ||
         (bootSelection == BOOT_OPTION_VWII_HOMEBREW_CHANNEL && !showvHBL) ||
-        (vpad.hold & VPAD_BUTTON_PLUS)) {
+        (buttons.hold & VPAD_BUTTON_PLUS)) {
         bootSelection = handleMenuScreen(configPath, bootSelection, menu);
     }
 
@@ -132,6 +133,8 @@ int32_t main(int32_t argc, char **argv) {
     } else {
         bootWiiUMenu();
     }
+
+    InputUtils::DeInit();
 
     Mocha_DeInitLibrary();
     deinitLogging();

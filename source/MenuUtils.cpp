@@ -1,6 +1,7 @@
 #include "MenuUtils.h"
 #include "ACTAccountInfo.h"
 #include "DrawUtils.h"
+#include "InputUtils.h"
 #include "icon_png.h"
 #include "logger.h"
 #include "utils.h"
@@ -14,6 +15,7 @@
 #include <malloc.h>
 #include <memory>
 #include <nn/act/client_cpp.h>
+#include <padscore/kpad.h>
 #include <string>
 #include <sysapp/title.h>
 #include <vector>
@@ -27,15 +29,6 @@ const char *autoboot_config_strings[] = {
         "vwii_system_menu",
         "vwii_homebrew_channel",
 };
-
-template<typename... Args>
-std::string string_format(const std::string &format, Args... args) {
-    int size_s = std::snprintf(nullptr, 0, format.c_str(), args...) + 1; // Extra space for '\0'
-    auto size  = static_cast<size_t>(size_s);
-    auto buf   = std::make_unique<char[]>(size);
-    std::snprintf(buf.get(), size, format.c_str(), args...);
-    return std::string(buf.get(), buf.get() + size - 1); // We don't want the '\0' inside
-}
 
 int32_t readAutobootOption(std::string &configPath) {
     FILE *f = fopen(configPath.c_str(), "r");
@@ -104,11 +97,11 @@ int32_t handleMenuScreen(std::string &configPath, int32_t autobootOptionInput, c
     }
 
     bool redraw = true;
-    while (true) {
-        VPADStatus vpad{};
-        VPADRead(VPAD_CHAN_0, &vpad, 1, nullptr);
 
-        if (vpad.trigger & VPAD_BUTTON_UP) {
+    while (true) {
+        InputUtils::InputData buttons = InputUtils::getControllerInput();
+
+        if (buttons.trigger & VPAD_BUTTON_UP) {
             selectedIndex--;
 
             if (selectedIndex < 0) {
@@ -116,7 +109,7 @@ int32_t handleMenuScreen(std::string &configPath, int32_t autobootOptionInput, c
             }
 
             redraw = true;
-        } else if (vpad.trigger & VPAD_BUTTON_DOWN) {
+        } else if (buttons.trigger & VPAD_BUTTON_DOWN) {
             if (!menu.empty()) {
                 selectedIndex++;
 
@@ -125,12 +118,12 @@ int32_t handleMenuScreen(std::string &configPath, int32_t autobootOptionInput, c
                 }
                 redraw = true;
             }
-        } else if (vpad.trigger & VPAD_BUTTON_A) {
+        } else if (buttons.trigger & VPAD_BUTTON_A) {
             break;
-        } else if (vpad.trigger & VPAD_BUTTON_X) {
+        } else if (buttons.trigger & VPAD_BUTTON_X) {
             autobootIndex = -1;
             redraw        = true;
-        } else if (vpad.trigger & VPAD_BUTTON_Y) {
+        } else if (buttons.trigger & VPAD_BUTTON_Y) {
             autobootIndex = selectedIndex;
             redraw        = true;
         }
@@ -208,7 +201,6 @@ int32_t handleMenuScreen(std::string &configPath, int32_t autobootOptionInput, c
     return selected;
 }
 
-
 nn::act::SlotNo handleAccountSelectScreen(const std::vector<std::shared_ptr<AccountInfo>> &data) {
     auto screenBuffer = DrawUtils::InitOSScreen();
     if (!screenBuffer) {
@@ -225,21 +217,21 @@ nn::act::SlotNo handleAccountSelectScreen(const std::vector<std::shared_ptr<Acco
 
     int32_t selected = 0;
     bool redraw      = true;
-    while (true) {
-        VPADStatus vpad{};
-        VPADRead(VPAD_CHAN_0, &vpad, 1, nullptr);
 
-        if (vpad.trigger & VPAD_BUTTON_UP) {
+    while (true) {
+        InputUtils::InputData buttons = InputUtils::getControllerInput();
+
+        if (buttons.trigger & VPAD_BUTTON_UP) {
             if (selected > 0) {
                 selected--;
                 redraw = true;
             }
-        } else if (vpad.trigger & VPAD_BUTTON_DOWN) {
+        } else if (buttons.trigger & VPAD_BUTTON_DOWN) {
             if (selected < (int32_t) data.size() - 1) {
                 selected++;
                 redraw = true;
             }
-        } else if (vpad.trigger & VPAD_BUTTON_A) {
+        } else if (buttons.trigger & VPAD_BUTTON_A) {
             break;
         }
 
@@ -392,12 +384,11 @@ void handleUpdateWarningScreen() {
     DrawUtils::endDraw();
 
     while (true) {
-        VPADStatus vpad{};
-        VPADRead(VPAD_CHAN_0, &vpad, 1, nullptr);
+        InputUtils::InputData buttons = InputUtils::getControllerInput();
 
-        if (vpad.trigger & VPAD_BUTTON_A) {
+        if (buttons.trigger & VPAD_BUTTON_A) {
             break;
-        } else if (vpad.trigger & VPAD_BUTTON_B) {
+        } else if (buttons.trigger & VPAD_BUTTON_B) {
             f = fopen(UPDATE_SKIP_PATH, "w");
             if (f) {
                 // It's **really** important to have this text on the stack.
@@ -493,11 +484,11 @@ bool handleDiscInsertScreen(uint64_t expectedTitleId, uint64_t *titleIdToLaunch)
 
     // When an unexpected disc was inserted we need to eject it first.
     bool allowDisc = !wrongDiscInserted;
-    while (true) {
-        VPADStatus vpad{};
-        VPADRead(VPAD_CHAN_0, &vpad, 1, nullptr);
 
-        if (vpad.trigger & VPAD_BUTTON_A) {
+    while (true) {
+        InputUtils::InputData buttons = InputUtils::getControllerInput();
+
+        if (buttons.trigger & VPAD_BUTTON_A) {
             result = false;
             break;
         }
