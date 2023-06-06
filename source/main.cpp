@@ -9,6 +9,7 @@
 #include <gx2/state.h>
 #include <malloc.h>
 #include <mocha/mocha.h>
+#include <padscore/kpad.h>
 #include <sndcore2/core.h>
 #include <string>
 #include <sys/stat.h>
@@ -47,6 +48,9 @@ int32_t main(int32_t argc, char **argv) {
     if (Mocha_InitLibrary() != MOCHA_RESULT_SUCCESS) {
         OSFatal("AutobootModule: Mocha_InitLibrary failed");
     }
+
+    KPADInit();
+    WPADEnableURCC(1);
 
     VPADStatus vpad{};
     // Buffer vpad read.

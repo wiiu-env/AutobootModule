@@ -14,6 +14,7 @@
 #include <malloc.h>
 #include <memory>
 #include <nn/act/client_cpp.h>
+#include <padscore/kpad.h>
 #include <string>
 #include <sysapp/title.h>
 #include <vector>
@@ -395,9 +396,19 @@ void handleUpdateWarningScreen() {
         VPADStatus vpad{};
         VPADRead(VPAD_CHAN_0, &vpad, 1, nullptr);
 
-        if (vpad.trigger & VPAD_BUTTON_A) {
+        KPADStatus kpad;
+        uint32_t wiimoteButtonsTriggered = 0;
+        uint32_t classicButtonsTriggered = 0;
+        for (int32_t i = 0; i < 4; i++) {
+            if (KPADRead((KPADChan) i, &kpad, 1) > 0) {
+                wiimoteButtonsTriggered |= kpad.trigger;
+                classicButtonsTriggered |= kpad.classic.trigger;
+            }
+        }
+
+        if (vpad.trigger & VPAD_BUTTON_A || wiimoteButtonsTriggered & WPAD_BUTTON_A || classicButtonsTriggered & WPAD_CLASSIC_BUTTON_A) {
             break;
-        } else if (vpad.trigger & VPAD_BUTTON_B) {
+        } else if (vpad.trigger & VPAD_BUTTON_B || wiimoteButtonsTriggered & WPAD_BUTTON_B || classicButtonsTriggered & WPAD_CLASSIC_BUTTON_B) {
             f = fopen(UPDATE_SKIP_PATH, "w");
             if (f) {
                 // It's **really** important to have this text on the stack.
