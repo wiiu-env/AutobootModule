@@ -27,6 +27,10 @@ enum {
     BOOT_OPTION_VWII_HOMEBREW_CHANNEL,
 };
 
+uint32_t remapWiiMoteButtons(uint32_t buttons);
+
+uint32_t remapClassicButtons(uint32_t buttons);
+
 int32_t readAutobootOption(std::string &configPath);
 
 void writeAutobootOption(std::string &configPath, int32_t autobootOption);
