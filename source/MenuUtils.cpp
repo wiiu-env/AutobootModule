@@ -128,6 +128,39 @@ uint32_t remapClassicButtons(uint32_t buttons) {
     return convButtons;
 }
 
+InputData getInput() {
+    VPADStatus vpadStatus;
+    VPADReadError vpadError;
+    KPADStatus kpadStatus;
+    KPADError kpadError;
+    InputData inputData;
+
+    VPADRead(VPAD_CHAN_0, &vpadStatus, 1, &vpadError);
+    if (vpadError == VPAD_READ_SUCCESS) {
+        inputData.trigger = vpadStatus.trigger;
+        inputData.hold    = vpadStatus.hold;
+        inputData.release = vpadStatus.release;
+    }
+
+    for (int32_t i = 0; i < 4; i++) {
+        if (KPADReadEx((KPADChan) i, &kpadStatus, 1, &kpadError) > 0) {
+            if (kpadError == KPAD_ERROR_OK && kpadStatus.extensionType != 0xFF) {
+                if (kpadStatus.extensionType == WPAD_EXT_CORE || kpadStatus.extensionType == WPAD_EXT_NUNCHUK) {
+                    inputData.trigger |= remapWiiMoteButtons(kpadStatus.trigger);
+                    inputData.hold |= remapWiiMoteButtons(kpadStatus.hold);
+                    inputData.release |= remapWiiMoteButtons(kpadStatus.release);
+                } else {
+                    inputData.trigger |= remapClassicButtons(kpadStatus.classic.trigger);
+                    inputData.hold |= remapClassicButtons(kpadStatus.classic.hold);
+                    inputData.release |= remapClassicButtons(kpadStatus.classic.release);
+                }
+            }
+        }
+    }
+
+    return inputData;
+}
+
 int32_t readAutobootOption(std::string &configPath) {
     FILE *f = fopen(configPath.c_str(), "r");
     if (f) {
@@ -196,33 +229,10 @@ int32_t handleMenuScreen(std::string &configPath, int32_t autobootOptionInput, c
 
     bool redraw = true;
 
-    VPADStatus vpadStatus;
-    VPADReadError vpadError;
-    KPADStatus kpadStatus;
-    KPADError kpadError;
-    uint32_t buttonsTriggered = 0;
-
     while (true) {
-        buttonsTriggered = 0;
+        InputData buttons = getInput();
 
-        VPADRead(VPAD_CHAN_0, &vpadStatus, 1, &vpadError);
-        if (vpadError == VPAD_READ_SUCCESS) {
-            buttonsTriggered = vpadStatus.trigger;
-        }
-
-        for (int32_t i = 0; i < 4; i++) {
-            if (KPADReadEx((KPADChan) i, &kpadStatus, 1, &kpadError) > 0) {
-                if (kpadError == KPAD_ERROR_OK && kpadStatus.extensionType != 0xFF) {
-                    if (kpadStatus.extensionType == WPAD_EXT_CORE || kpadStatus.extensionType == WPAD_EXT_NUNCHUK) {
-                        buttonsTriggered |= remapWiiMoteButtons(kpadStatus.trigger);
-                    } else {
-                        buttonsTriggered |= remapClassicButtons(kpadStatus.classic.trigger);
-                    }
-                }
-            }
-        }
-
-        if (buttonsTriggered & VPAD_BUTTON_UP) {
+        if (buttons.trigger & VPAD_BUTTON_UP) {
             selectedIndex--;
 
             if (selectedIndex < 0) {
@@ -230,7 +240,7 @@ int32_t handleMenuScreen(std::string &configPath, int32_t autobootOptionInput, c
             }
 
             redraw = true;
-        } else if (buttonsTriggered & VPAD_BUTTON_DOWN) {
+        } else if (buttons.trigger & VPAD_BUTTON_DOWN) {
             if (!menu.empty()) {
                 selectedIndex++;
 
@@ -239,12 +249,12 @@ int32_t handleMenuScreen(std::string &configPath, int32_t autobootOptionInput, c
                 }
                 redraw = true;
             }
-        } else if (buttonsTriggered & VPAD_BUTTON_A) {
+        } else if (buttons.trigger & VPAD_BUTTON_A) {
             break;
-        } else if (buttonsTriggered & VPAD_BUTTON_X) {
+        } else if (buttons.trigger & VPAD_BUTTON_X) {
             autobootIndex = -1;
             redraw        = true;
-        } else if (buttonsTriggered & VPAD_BUTTON_Y) {
+        } else if (buttons.trigger & VPAD_BUTTON_Y) {
             autobootIndex = selectedIndex;
             redraw        = true;
         }
@@ -339,43 +349,20 @@ nn::act::SlotNo handleAccountSelectScreen(const std::vector<std::shared_ptr<Acco
     int32_t selected = 0;
     bool redraw      = true;
 
-    VPADStatus vpadStatus;
-    VPADReadError vpadError;
-    KPADStatus kpadStatus;
-    KPADError kpadError;
-    uint32_t buttonsTriggered = 0;
-
     while (true) {
-        buttonsTriggered = 0;
+        InputData buttons = getInput();
 
-        VPADRead(VPAD_CHAN_0, &vpadStatus, 1, &vpadError);
-        if (vpadError == VPAD_READ_SUCCESS) {
-            buttonsTriggered = vpadStatus.trigger;
-        }
-
-        for (int32_t i = 0; i < 4; i++) {
-            if (KPADReadEx((KPADChan) i, &kpadStatus, 1, &kpadError) > 0) {
-                if (kpadError == KPAD_ERROR_OK && kpadStatus.extensionType != 0xFF) {
-                    if (kpadStatus.extensionType == WPAD_EXT_CORE || kpadStatus.extensionType == WPAD_EXT_NUNCHUK) {
-                        buttonsTriggered |= remapWiiMoteButtons(kpadStatus.trigger);
-                    } else {
-                        buttonsTriggered |= remapClassicButtons(kpadStatus.classic.trigger);
-                    }
-                }
-            }
-        }
-
-        if (buttonsTriggered & VPAD_BUTTON_UP) {
+        if (buttons.trigger & VPAD_BUTTON_UP) {
             if (selected > 0) {
                 selected--;
                 redraw = true;
             }
-        } else if (buttonsTriggered & VPAD_BUTTON_DOWN) {
+        } else if (buttons.trigger & VPAD_BUTTON_DOWN) {
             if (selected < (int32_t) data.size() - 1) {
                 selected++;
                 redraw = true;
             }
-        } else if (buttonsTriggered & VPAD_BUTTON_A) {
+        } else if (buttons.trigger & VPAD_BUTTON_A) {
             break;
         }
 
@@ -527,35 +514,12 @@ void handleUpdateWarningScreen() {
 
     DrawUtils::endDraw();
 
-    VPADStatus vpadStatus;
-    VPADReadError vpadError;
-    KPADStatus kpadStatus;
-    KPADError kpadError;
-    uint32_t buttonsTriggered = 0;
-
     while (true) {
-        buttonsTriggered = 0;
+        InputData buttons = getInput();
 
-        VPADRead(VPAD_CHAN_0, &vpadStatus, 1, &vpadError);
-        if (vpadError == VPAD_READ_SUCCESS) {
-            buttonsTriggered = vpadStatus.trigger;
-        }
-
-        for (int32_t i = 0; i < 4; i++) {
-            if (KPADReadEx((KPADChan) i, &kpadStatus, 1, &kpadError) > 0) {
-                if (kpadError == KPAD_ERROR_OK && kpadStatus.extensionType != 0xFF) {
-                    if (kpadStatus.extensionType == WPAD_EXT_CORE || kpadStatus.extensionType == WPAD_EXT_NUNCHUK) {
-                        buttonsTriggered |= remapWiiMoteButtons(kpadStatus.trigger);
-                    } else {
-                        buttonsTriggered |= remapClassicButtons(kpadStatus.classic.trigger);
-                    }
-                }
-            }
-        }
-
-        if (buttonsTriggered & VPAD_BUTTON_A) {
+        if (buttons.trigger & VPAD_BUTTON_A) {
             break;
-        } else if (buttonsTriggered & VPAD_BUTTON_B) {
+        } else if (buttons.trigger & VPAD_BUTTON_B) {
             f = fopen(UPDATE_SKIP_PATH, "w");
             if (f) {
                 // It's **really** important to have this text on the stack.
@@ -652,33 +616,10 @@ bool handleDiscInsertScreen(uint64_t expectedTitleId, uint64_t *titleIdToLaunch)
     // When an unexpected disc was inserted we need to eject it first.
     bool allowDisc = !wrongDiscInserted;
 
-    VPADStatus vpadStatus;
-    VPADReadError vpadError;
-    KPADStatus kpadStatus;
-    KPADError kpadError;
-    uint32_t buttonsTriggered = 0;
-
     while (true) {
-        buttonsTriggered = 0;
+        InputData buttons = getInput();
 
-        VPADRead(VPAD_CHAN_0, &vpadStatus, 1, &vpadError);
-        if (vpadError == VPAD_READ_SUCCESS) {
-            buttonsTriggered = vpadStatus.trigger;
-        }
-
-        for (int32_t i = 0; i < 4; i++) {
-            if (KPADReadEx((KPADChan) i, &kpadStatus, 1, &kpadError) > 0) {
-                if (kpadError == KPAD_ERROR_OK && kpadStatus.extensionType != 0xFF) {
-                    if (kpadStatus.extensionType == WPAD_EXT_CORE || kpadStatus.extensionType == WPAD_EXT_NUNCHUK) {
-                        buttonsTriggered |= remapWiiMoteButtons(kpadStatus.trigger);
-                    } else {
-                        buttonsTriggered |= remapClassicButtons(kpadStatus.classic.trigger);
-                    }
-                }
-            }
-        }
-
-        if (buttonsTriggered & VPAD_BUTTON_A) {
+        if (buttons.trigger & VPAD_BUTTON_A) {
             result = false;
             break;
         }

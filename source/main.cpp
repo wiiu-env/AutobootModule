@@ -39,6 +39,9 @@ int32_t main(int32_t argc, char **argv) {
 
     initExternalStorage();
 
+    KPADInit();
+    WPADEnableURCC(1);
+
     if (getQuickBoot()) {
 
         deinitLogging();
@@ -49,31 +52,7 @@ int32_t main(int32_t argc, char **argv) {
         OSFatal("AutobootModule: Mocha_InitLibrary failed");
     }
 
-    KPADInit();
-    WPADEnableURCC(1);
-
-    VPADStatus vpadStatus;
-    VPADReadError vpadError;
-    KPADStatus kpadStatus;
-    KPADError kpadError;
-    uint32_t buttonsHeld = 0;
-
-    VPADRead(VPAD_CHAN_0, &vpadStatus, 1, &vpadError);
-    if (vpadError == VPAD_READ_SUCCESS) {
-        buttonsHeld = vpadStatus.hold;
-    }
-
-    for (int32_t i = 0; i < 4; i++) {
-        if (KPADReadEx((KPADChan) i, &kpadStatus, 1, &kpadError) > 0) {
-            if (kpadError == KPAD_ERROR_OK && kpadStatus.extensionType != 0xFF) {
-                if (kpadStatus.extensionType == WPAD_EXT_CORE || kpadStatus.extensionType == WPAD_EXT_NUNCHUK) {
-                    buttonsHeld |= remapWiiMoteButtons(kpadStatus.hold);
-                } else {
-                    buttonsHeld |= remapClassicButtons(kpadStatus.classic.hold);
-                }
-            }
-        }
-    }
+    InputData buttons = getInput();
 
     FSAInit();
     auto client = FSAAddClient(nullptr);
@@ -122,7 +101,7 @@ int32_t main(int32_t argc, char **argv) {
     if ((bootSelection == -1) ||
         (bootSelection == BOOT_OPTION_HOMEBREW_LAUNCHER && !showHBL) ||
         (bootSelection == BOOT_OPTION_VWII_HOMEBREW_CHANNEL && !showvHBL) ||
-        (buttonsHeld & VPAD_BUTTON_PLUS)) {
+        (buttons.hold & VPAD_BUTTON_PLUS)) {
         bootSelection = handleMenuScreen(configPath, bootSelection, menu);
     }
 
