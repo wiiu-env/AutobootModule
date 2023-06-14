@@ -1,6 +1,6 @@
 #pragma once
 #include <cstdint>
-
+#include <vpad/input.h>
 
 class InputUtils {
 public:

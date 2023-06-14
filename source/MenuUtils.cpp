@@ -2,24 +2,21 @@
 #include "ACTAccountInfo.h"
 #include "DrawUtils.h"
 #include "InputUtils.h"
+#include "PairUtils.h"
 #include "icon_png.h"
 #include "logger.h"
 #include "utils.h"
 #include "version.h"
 #include <coreinit/debug.h>
-#include <coreinit/mcp.h>
 #include <coreinit/screen.h>
 #include <coreinit/thread.h>
 #include <cstring>
 #include <gx2/state.h>
 #include <malloc.h>
 #include <memory>
-#include <nn/act/client_cpp.h>
-#include <padscore/kpad.h>
 #include <string>
 #include <sysapp/title.h>
 #include <vector>
-#include <vpad/input.h>
 
 #define AUTOBOOT_MODULE_VERSION "v0.1.3"
 
@@ -59,6 +56,48 @@ void writeAutobootOption(std::string &configPath, int32_t autobootOption) {
     }
 }
 
+void drawMenuScreen(const std::map<uint32_t, std::string> &menu, uint32_t selectedIndex, uint32_t autobootIndex) {
+    DrawUtils::beginDraw();
+    DrawUtils::clear(COLOR_BACKGROUND);
+
+    // draw buttons
+    uint32_t index = 8 + 24 + 8 + 4;
+    for (uint32_t i = 0; i < menu.size(); i++) {
+        if (i == (uint32_t) selectedIndex) {
+            DrawUtils::drawRect(16, index, SCREEN_WIDTH - 16 * 2, 44, 4, COLOR_BORDER_HIGHLIGHTED);
+        } else {
+            DrawUtils::drawRect(16, index, SCREEN_WIDTH - 16 * 2, 44, 2, (i == (uint32_t) autobootIndex) ? COLOR_AUTOBOOT : COLOR_BORDER);
+        }
+
+        std::string curName = std::next(menu.begin(), i)->second;
+
+        DrawUtils::setFontSize(24);
+        DrawUtils::setFontColor((i == (uint32_t) autobootIndex) ? COLOR_AUTOBOOT : COLOR_TEXT);
+        DrawUtils::print(16 * 2, index + 8 + 24, curName.c_str());
+        index += 42 + 8;
+    }
+
+    DrawUtils::setFontColor(COLOR_TEXT);
+
+    // draw top bar
+    DrawUtils::setFontSize(24);
+    DrawUtils::drawPNG(16, 2, icon_png);
+    DrawUtils::print(64 + 2, 6 + 24, "Boot Selector");
+    DrawUtils::drawRectFilled(8, 8 + 24 + 4, SCREEN_WIDTH - 8 * 2, 3, COLOR_WHITE);
+    DrawUtils::setFontSize(16);
+    DrawUtils::print(SCREEN_WIDTH - 16, 6 + 24, AUTOBOOT_MODULE_VERSION AUTOBOOT_MODULE_VERSION_EXTRA, true);
+
+    // draw bottom bar
+    DrawUtils::drawRectFilled(8, SCREEN_HEIGHT - 24 - 8 - 4, SCREEN_WIDTH - 8 * 2, 3, COLOR_WHITE);
+    DrawUtils::setFontSize(18);
+    DrawUtils::print(16, SCREEN_HEIGHT - 8, "\ue07d Navigate ");
+    DrawUtils::print(SCREEN_WIDTH - 16, SCREEN_HEIGHT - 8, "\ue000 Choose", true);
+    const char *autobootHints = "\ue002/\ue046 Clear Autoboot / \ue003/\ue045 Select Autoboot";
+    DrawUtils::print(SCREEN_WIDTH / 2 + DrawUtils::getTextWidth(autobootHints) / 2, SCREEN_HEIGHT - 8, autobootHints, true);
+
+    DrawUtils::endDraw();
+}
+
 int32_t handleMenuScreen(std::string &configPath, int32_t autobootOptionInput, const std::map<uint32_t, std::string> &menu) {
     auto screenBuffer = DrawUtils::InitOSScreen();
     if (!screenBuffer) {
@@ -96,80 +135,41 @@ int32_t handleMenuScreen(std::string &configPath, int32_t autobootOptionInput, c
         }
     }
 
-    bool redraw = true;
 
-    while (true) {
-        InputUtils::InputData buttons = InputUtils::getControllerInput();
+    {
+        PairMenu pairMenu;
 
-        if (buttons.trigger & VPAD_BUTTON_UP) {
-            selectedIndex--;
-
-            if (selectedIndex < 0) {
-                selectedIndex = 0;
+        while (true) {
+            if (pairMenu.ProcessPairScreen()) {
+                continue;
             }
 
-            redraw = true;
-        } else if (buttons.trigger & VPAD_BUTTON_DOWN) {
-            if (!menu.empty()) {
-                selectedIndex++;
+            InputUtils::InputData input = InputUtils::getControllerInput();
+            if (input.trigger & VPAD_BUTTON_UP) {
+                selectedIndex--;
 
-                if ((uint32_t) selectedIndex >= menu.size()) {
-                    selectedIndex = menu.size() - 1;
-                }
-                redraw = true;
-            }
-        } else if (buttons.trigger & VPAD_BUTTON_A) {
-            break;
-        } else if (buttons.trigger & VPAD_BUTTON_X) {
-            autobootIndex = -1;
-            redraw        = true;
-        } else if (buttons.trigger & VPAD_BUTTON_Y) {
-            autobootIndex = selectedIndex;
-            redraw        = true;
-        }
-
-        if (redraw) {
-            DrawUtils::beginDraw();
-            DrawUtils::clear(COLOR_BACKGROUND);
-
-            // draw buttons
-            uint32_t index = 8 + 24 + 8 + 4;
-            for (uint32_t i = 0; i < menu.size(); i++) {
-                if (i == (uint32_t) selectedIndex) {
-                    DrawUtils::drawRect(16, index, SCREEN_WIDTH - 16 * 2, 44, 4, COLOR_BORDER_HIGHLIGHTED);
-                } else {
-                    DrawUtils::drawRect(16, index, SCREEN_WIDTH - 16 * 2, 44, 2, (i == (uint32_t) autobootIndex) ? COLOR_AUTOBOOT : COLOR_BORDER);
+                if (selectedIndex < 0) {
+                    selectedIndex = 0;
                 }
 
-                std::string curName = std::next(menu.begin(), i)->second;
+            } else if (input.trigger & VPAD_BUTTON_DOWN) {
+                if (!menu.empty()) {
+                    selectedIndex++;
 
-                DrawUtils::setFontSize(24);
-                DrawUtils::setFontColor((i == (uint32_t) autobootIndex) ? COLOR_AUTOBOOT : COLOR_TEXT);
-                DrawUtils::print(16 * 2, index + 8 + 24, curName.c_str());
-                index += 42 + 8;
+                    if ((uint32_t) selectedIndex >= menu.size()) {
+                        selectedIndex = menu.size() - 1;
+                    }
+                }
+            } else if (input.trigger & VPAD_BUTTON_A) {
+                break;
+            } else if (input.trigger & (VPAD_BUTTON_X | VPAD_BUTTON_MINUS)) {
+                autobootIndex = -1;
+            } else if (input.trigger & (VPAD_BUTTON_Y | VPAD_BUTTON_PLUS)) {
+                autobootIndex = selectedIndex;
             }
 
-            DrawUtils::setFontColor(COLOR_TEXT);
 
-            // draw top bar
-            DrawUtils::setFontSize(24);
-            DrawUtils::drawPNG(16, 2, icon_png);
-            DrawUtils::print(64 + 2, 6 + 24, "Boot Selector");
-            DrawUtils::drawRectFilled(8, 8 + 24 + 4, SCREEN_WIDTH - 8 * 2, 3, COLOR_WHITE);
-            DrawUtils::setFontSize(16);
-            DrawUtils::print(SCREEN_WIDTH - 16, 6 + 24, AUTOBOOT_MODULE_VERSION AUTOBOOT_MODULE_VERSION_EXTRA, true);
-
-            // draw bottom bar
-            DrawUtils::drawRectFilled(8, SCREEN_HEIGHT - 24 - 8 - 4, SCREEN_WIDTH - 8 * 2, 3, COLOR_WHITE);
-            DrawUtils::setFontSize(18);
-            DrawUtils::print(16, SCREEN_HEIGHT - 8, "\ue07d Navigate ");
-            DrawUtils::print(SCREEN_WIDTH - 16, SCREEN_HEIGHT - 8, "\ue000 Choose", true);
-            const char *autobootHints = "\ue002 Clear Autoboot / \ue003 Select Autoboot";
-            DrawUtils::print(SCREEN_WIDTH / 2 + DrawUtils::getTextWidth(autobootHints) / 2, SCREEN_HEIGHT - 8, autobootHints, true);
-
-            DrawUtils::endDraw();
-
-            redraw = false;
+            drawMenuScreen(menu, selectedIndex, autobootIndex);
         }
     }
 
@@ -216,26 +216,27 @@ nn::act::SlotNo handleAccountSelectScreen(const std::vector<std::shared_ptr<Acco
     }
 
     int32_t selected = 0;
-    bool redraw      = true;
-
-    while (true) {
-        InputUtils::InputData buttons = InputUtils::getControllerInput();
-
-        if (buttons.trigger & VPAD_BUTTON_UP) {
-            if (selected > 0) {
-                selected--;
-                redraw = true;
+    {
+        PairMenu pairMenu;
+        while (true) {
+            if (pairMenu.ProcessPairScreen()) {
+                continue;
             }
-        } else if (buttons.trigger & VPAD_BUTTON_DOWN) {
-            if (selected < (int32_t) data.size() - 1) {
-                selected++;
-                redraw = true;
-            }
-        } else if (buttons.trigger & VPAD_BUTTON_A) {
-            break;
-        }
 
-        if (redraw) {
+            InputUtils::InputData input = InputUtils::getControllerInput();
+            if (input.trigger & VPAD_BUTTON_UP) {
+                if (selected > 0) {
+                    selected--;
+                }
+            } else if (input.trigger & VPAD_BUTTON_DOWN) {
+                if (selected < (int32_t) data.size() - 1) {
+                    selected++;
+                }
+            } else if (input.trigger & VPAD_BUTTON_A) {
+                break;
+            }
+
+
             DrawUtils::beginDraw();
             DrawUtils::clear(COLOR_BACKGROUND);
 
@@ -306,8 +307,6 @@ nn::act::SlotNo handleAccountSelectScreen(const std::vector<std::shared_ptr<Acco
             }
 
             DrawUtils::endDraw();
-
-            redraw = false;
         }
     }
 
@@ -334,6 +333,41 @@ nn::act::SlotNo handleAccountSelectScreen(const std::vector<std::shared_ptr<Acco
     return resultSlot;
 }
 
+void drawUpdateWarningScreen() {
+    DrawUtils::beginDraw();
+    DrawUtils::clear(COLOR_BACKGROUND_WARN);
+
+    DrawUtils::setFontColor(COLOR_TEXT);
+
+    // draw top bar
+    DrawUtils::setFontSize(48);
+    const char *title = "! Warning !";
+    DrawUtils::print(SCREEN_WIDTH / 2 + DrawUtils::getTextWidth(title) / 2, 48 + 8, title, true);
+    DrawUtils::drawRectFilled(8, 48 + 8 + 16, SCREEN_WIDTH - 8 * 2, 3, COLOR_WHITE);
+
+    DrawUtils::setFontSize(24);
+
+    const char *message = "The update folder currently exists and is not a file.";
+    DrawUtils::print(SCREEN_WIDTH / 2 + DrawUtils::getTextWidth(message) / 2, SCREEN_HEIGHT / 2 - 48, message, true);
+    message = "Your system might not be blocking updates properly!";
+    DrawUtils::print(SCREEN_WIDTH / 2 + DrawUtils::getTextWidth(message) / 2, SCREEN_HEIGHT / 2 - 24, message, true);
+    message = "See https://wiiu.hacks.guide/#/block-updates for more information.";
+    DrawUtils::print(SCREEN_WIDTH / 2 + DrawUtils::getTextWidth(message) / 2, SCREEN_HEIGHT / 2 + 0, message, true);
+
+    DrawUtils::setFontSize(16);
+
+    message = "Press the SYNC Button on the Wii U console to connect a controller or GamePad.";
+    DrawUtils::print(SCREEN_WIDTH / 2 + DrawUtils::getTextWidth(message) / 2, SCREEN_HEIGHT - 48, message, true);
+
+    // draw bottom bar
+    DrawUtils::drawRectFilled(8, SCREEN_HEIGHT - 24 - 8 - 4, SCREEN_WIDTH - 8 * 2, 3, COLOR_WHITE);
+    DrawUtils::setFontSize(18);
+    const char *exitHints = "\ue000 Continue / \ue001 Don't show this again";
+    DrawUtils::print(SCREEN_WIDTH / 2 + DrawUtils::getTextWidth(exitHints) / 2, SCREEN_HEIGHT - 8, exitHints, true);
+
+    DrawUtils::endDraw();
+}
+
 void handleUpdateWarningScreen() {
     FILE *f = fopen(UPDATE_SKIP_PATH, "r");
     if (f) {
@@ -355,59 +389,67 @@ void handleUpdateWarningScreen() {
         OSFatal("Failed to init font");
     }
 
-    DrawUtils::beginDraw();
-    DrawUtils::clear(COLOR_BACKGROUND_WARN);
+    {
+        PairMenu pairMenu;
 
-    DrawUtils::setFontColor(COLOR_TEXT);
-
-    // draw top bar
-    DrawUtils::setFontSize(48);
-    const char *title = "! Warning !";
-    DrawUtils::print(SCREEN_WIDTH / 2 + DrawUtils::getTextWidth(title) / 2, 48 + 8, title, true);
-    DrawUtils::drawRectFilled(8, 48 + 8 + 16, SCREEN_WIDTH - 8 * 2, 3, COLOR_WHITE);
-
-    DrawUtils::setFontSize(24);
-
-    const char *message = "The update folder currently exists and is not a file.";
-    DrawUtils::print(SCREEN_WIDTH / 2 + DrawUtils::getTextWidth(message) / 2, SCREEN_HEIGHT / 2 - 24, message, true);
-    message = "Your system might not be blocking updates properly!";
-    DrawUtils::print(SCREEN_WIDTH / 2 + DrawUtils::getTextWidth(message) / 2, SCREEN_HEIGHT / 2 + 0, message, true);
-    message = "See https://wiiu.hacks.guide/#/block-updates for more information.";
-    DrawUtils::print(SCREEN_WIDTH / 2 + DrawUtils::getTextWidth(message) / 2, SCREEN_HEIGHT / 2 + 24, message, true);
-
-    // draw bottom bar
-    DrawUtils::drawRectFilled(8, SCREEN_HEIGHT - 24 - 8 - 4, SCREEN_WIDTH - 8 * 2, 3, COLOR_WHITE);
-    DrawUtils::setFontSize(18);
-    const char *exitHints = "\ue000 Continue / \ue001 Don't show this again";
-    DrawUtils::print(SCREEN_WIDTH / 2 + DrawUtils::getTextWidth(exitHints) / 2, SCREEN_HEIGHT - 8, exitHints, true);
-
-    DrawUtils::endDraw();
-
-    while (true) {
-        InputUtils::InputData buttons = InputUtils::getControllerInput();
-
-        if (buttons.trigger & VPAD_BUTTON_A) {
-            break;
-        } else if (buttons.trigger & VPAD_BUTTON_B) {
-            f = fopen(UPDATE_SKIP_PATH, "w");
-            if (f) {
-                // It's **really** important to have this text on the stack.
-                // If it's read from the .rodata section the fwrite will softlock the console because the OSEffectiveToPhysical returns NULL for
-                // everything between 0x00800000 - 0x01000000 at this stage.
-                const char text[] = "If this file exists, the Autoboot Module will not warn you about not blocking updates";
-                fputs(text, f);
-                fclose(f);
+        while (true) {
+            if (pairMenu.ProcessPairScreen()) {
+                continue;
             }
-            break;
+
+            drawUpdateWarningScreen();
+
+            InputUtils::InputData input = InputUtils::getControllerInput();
+            if (input.trigger & VPAD_BUTTON_A) {
+                break;
+            } else if (input.trigger & VPAD_BUTTON_B) {
+                f = fopen(UPDATE_SKIP_PATH, "w");
+                if (f) {
+                    // It's **really** important to have this text on the stack.
+                    // If it's read from the .rodata section the fwrite will softlock the console because the OSEffectiveToPhysical returns NULL for
+                    // everything between 0x00800000 - 0x01000000 at this stage.
+                    const char text[] = "If this file exists, the Autoboot Module will not warn you about not blocking updates";
+                    fputs(text, f);
+                    fclose(f);
+                }
+                break;
+            }
         }
     }
 
+    DrawUtils::beginDraw();
     DrawUtils::clear(COLOR_BLACK);
     DrawUtils::endDraw();
 
     DrawUtils::deinitFont();
 
     free(screenBuffer);
+}
+
+void drawDiscInsert(bool wrongDiscInserted) {
+    DrawUtils::beginDraw();
+    DrawUtils::clear(COLOR_BACKGROUND);
+    DrawUtils::setFontColor(COLOR_TEXT);
+
+    DrawUtils::setFontSize(48);
+
+    if (wrongDiscInserted) {
+        const char *title = "The disc inserted into the console";
+        DrawUtils::print(SCREEN_WIDTH / 2 + DrawUtils::getTextWidth(title) / 2, 40 + 48 + 8, title, true);
+        title = "is for a different software title.";
+        DrawUtils::print(SCREEN_WIDTH / 2 + DrawUtils::getTextWidth(title) / 2, 40 + 2 * 48 + 8, title, true);
+        title = "Please change the disc.";
+        DrawUtils::print(SCREEN_WIDTH / 2 + DrawUtils::getTextWidth(title) / 2, 40 + 4 * 48 + 8, title, true);
+    } else {
+        const char *title = "Please insert a disc.";
+        DrawUtils::print(SCREEN_WIDTH / 2 + DrawUtils::getTextWidth(title) / 2, 40 + 48 + 8, title, true);
+    }
+
+    DrawUtils::setFontSize(18);
+    const char *exitHints = "\ue000 Launch Wii U Menu";
+    DrawUtils::print(SCREEN_WIDTH / 2 + DrawUtils::getTextWidth(exitHints) / 2, SCREEN_HEIGHT - 8, exitHints, true);
+
+    DrawUtils::endDraw();
 }
 
 bool handleDiscInsertScreen(uint64_t expectedTitleId, uint64_t *titleIdToLaunch) {
@@ -458,56 +500,43 @@ bool handleDiscInsertScreen(uint64_t expectedTitleId, uint64_t *titleIdToLaunch)
         return true;
     }
 
-    DrawUtils::beginDraw();
-    DrawUtils::clear(COLOR_BACKGROUND);
-    DrawUtils::setFontColor(COLOR_TEXT);
-
-    DrawUtils::setFontSize(48);
-
-    if (wrongDiscInserted) {
-        const char *title = "The disc inserted into the console";
-        DrawUtils::print(SCREEN_WIDTH / 2 + DrawUtils::getTextWidth(title) / 2, 40 + 48 + 8, title, true);
-        title = "is for a different software title.";
-        DrawUtils::print(SCREEN_WIDTH / 2 + DrawUtils::getTextWidth(title) / 2, 40 + 2 * 48 + 8, title, true);
-        title = "Please change the disc.";
-        DrawUtils::print(SCREEN_WIDTH / 2 + DrawUtils::getTextWidth(title) / 2, 40 + 4 * 48 + 8, title, true);
-    } else {
-        const char *title = "Please insert a disc.";
-        DrawUtils::print(SCREEN_WIDTH / 2 + DrawUtils::getTextWidth(title) / 2, 40 + 48 + 8, title, true);
-    }
-
-    DrawUtils::setFontSize(18);
-    const char *exitHints = "\ue000 Launch Wii U Menu";
-    DrawUtils::print(SCREEN_WIDTH / 2 + DrawUtils::getTextWidth(exitHints) / 2, SCREEN_HEIGHT - 8, exitHints, true);
-
-    DrawUtils::endDraw();
-
     // When an unexpected disc was inserted we need to eject it first.
     bool allowDisc = !wrongDiscInserted;
 
-    while (true) {
-        InputUtils::InputData buttons = InputUtils::getControllerInput();
+    {
+        PairMenu pairMenu;
 
-        if (buttons.trigger & VPAD_BUTTON_A) {
-            result = false;
-            break;
-        }
+        while (true) {
+            if (pairMenu.ProcessPairScreen()) {
+                continue;
+            }
 
-        if (GetTitleIdOfDisc(&titleIdOfDisc, &discInserted)) {
-            if (discInserted) {
-                if (!allowDisc) {
-                    continue;
-                }
-                *titleIdToLaunch = titleIdOfDisc;
-                DEBUG_FUNCTION_LINE("Disc inserted! %016llX", titleIdOfDisc);
-                result = true;
+            drawDiscInsert(wrongDiscInserted);
+
+            InputUtils::InputData input = InputUtils::getControllerInput();
+            if (input.trigger & VPAD_BUTTON_A) {
+                result = false;
                 break;
             }
-        } else {
-            allowDisc = true;
+
+
+            if (GetTitleIdOfDisc(&titleIdOfDisc, &discInserted)) {
+                if (discInserted) {
+                    if (!allowDisc) {
+                        continue;
+                    }
+                    *titleIdToLaunch = titleIdOfDisc;
+                    DEBUG_FUNCTION_LINE("Disc inserted! %016llX", titleIdOfDisc);
+                    result = true;
+                    break;
+                }
+            } else {
+                allowDisc = true;
+            }
         }
     }
 
+    DrawUtils::beginDraw();
     DrawUtils::clear(COLOR_BLACK);
     DrawUtils::endDraw();
 
