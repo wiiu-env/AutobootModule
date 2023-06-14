@@ -10,7 +10,6 @@
 #include <gx2/state.h>
 #include <malloc.h>
 #include <mocha/mocha.h>
-#include <padscore/kpad.h>
 #include <sndcore2/core.h>
 #include <string>
 #include <sys/stat.h>
@@ -51,6 +50,8 @@ int32_t main(int32_t argc, char **argv) {
         OSFatal("AutobootModule: Mocha_InitLibrary failed");
     }
 
+    InputUtils::InputData buttons = InputUtils::getControllerInput();
+
     FSAInit();
     auto client = FSAAddClient(nullptr);
     if (client > 0) {
@@ -69,8 +70,6 @@ int32_t main(int32_t argc, char **argv) {
     } else {
         DEBUG_FUNCTION_LINE_ERR("Failed to create FSA Client");
     }
-
-    InputUtils::InputData buttons = InputUtils::getControllerInput();
 
     bool showvHBL          = getVWiiHBLTitleId() != 0;
     bool showHBL           = false;
@@ -135,7 +134,6 @@ int32_t main(int32_t argc, char **argv) {
     }
 
     InputUtils::DeInit();
-
     Mocha_DeInitLibrary();
     deinitLogging();
 
