@@ -18,7 +18,7 @@
 #include <sysapp/title.h>
 #include <vector>
 
-#define AUTOBOOT_MODULE_VERSION "v0.1.3"
+#define AUTOBOOT_MODULE_VERSION "v0.2.0"
 
 const char *autoboot_config_strings[] = {
         "wiiu_menu",
