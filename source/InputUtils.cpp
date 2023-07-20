@@ -1,4 +1,5 @@
 #include "InputUtils.h"
+#include <coreinit/thread.h>
 #include <padscore/kpad.h>
 #include <padscore/wpad.h>
 #include <vpad/input.h>
@@ -97,11 +98,15 @@ InputUtils::InputData InputUtils::getControllerInput() {
     InputData inputData{};
     VPADStatus vpadStatus{};
     VPADReadError vpadError = VPAD_READ_UNINITIALIZED;
-    if (VPADRead(VPAD_CHAN_0, &vpadStatus, 1, &vpadError) > 0 && vpadError == VPAD_READ_SUCCESS) {
-        inputData.trigger = vpadStatus.trigger;
-        inputData.hold    = vpadStatus.hold;
-        inputData.release = vpadStatus.release;
-    }
+    do {
+        if (VPADRead(VPAD_CHAN_0, &vpadStatus, 1, &vpadError) > 0 && vpadError == VPAD_READ_SUCCESS) {
+            inputData.trigger = vpadStatus.trigger;
+            inputData.hold    = vpadStatus.hold;
+            inputData.release = vpadStatus.release;
+        } else {
+            OSSleepTicks(OSMillisecondsToTicks(1));
+        }
+    } while (vpadError == VPAD_READ_NO_SAMPLES);
 
     KPADStatus kpadStatus{};
     KPADError kpadError = KPAD_ERROR_UNINITIALIZED;
