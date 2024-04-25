@@ -10,6 +10,7 @@
 #include <gx2/state.h>
 #include <malloc.h>
 #include <mocha/mocha.h>
+#include <rpxloader/rpxloader.h>
 #include <sndcore2/core.h>
 #include <string>
 #include <sys/stat.h>
@@ -48,6 +49,12 @@ int32_t main(int32_t argc, char **argv) {
 
     if (Mocha_InitLibrary() != MOCHA_RESULT_SUCCESS) {
         OSFatal("AutobootModule: Mocha_InitLibrary failed");
+    }
+
+    // Use librpxloader.
+    RPXLoaderStatus error3;
+    if ((error3 = RPXLoader_InitLibrary()) != RPX_LOADER_RESULT_SUCCESS) {
+        DEBUG_FUNCTION_LINE("AutobootModule: Failed to init RPXLoader. This can be ignored when not running Aroma. Error %s [%d]", RPXLoader_GetStatusStr(error3), error3);
     }
 
     InputUtils::InputData buttons = InputUtils::getControllerInput();
