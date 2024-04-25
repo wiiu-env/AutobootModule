@@ -14,10 +14,14 @@
 #include <nn/ccr/sys_caffeine.h>
 #include <nn/sl.h>
 #include <proc_ui/procui.h>
+#include <rpxloader/rpxloader.h>
 #include <sysapp/launch.h>
 #include <sysapp/title.h>
 
 extern "C" void __fini_wut();
+
+#define UPPER_TITLE_ID_HOMEBREW 0x0005000F
+#define TITLE_ID_HOMEBREW_MASK  (((uint64_t) UPPER_TITLE_ID_HOMEBREW) << 32)
 
 static void StartAppletAndExit() {
     DEBUG_FUNCTION_LINE("Wait for applet");
@@ -123,6 +127,17 @@ bool getQuickBoot() {
         if (!result.IsSuccess()) {
             DEBUG_FUNCTION_LINE("GetLaunchInfoById failed.");
             return false;
+        }
+
+        if ((info.titleId & TITLE_ID_HOMEBREW_MASK) == TITLE_ID_HOMEBREW_MASK) {
+            std::string homebrewPath = info.parameter;
+            DEBUG_FUNCTION_LINE("Trying to launch homebrew title: \"%s\"", homebrewPath.c_str());
+
+            if (auto err = RPXLoader_LaunchHomebrew(homebrewPath.c_str()); err != RPX_LOADER_RESULT_SUCCESS) {
+                DEBUG_FUNCTION_LINE_WARN("Failed to launch homebrew title: %s (%d)", RPXLoader_GetStatusStr(err), err);
+                return false;
+            }
+            return true;
         }
 
         if (info.titleId == 0x0005001010040000L ||
