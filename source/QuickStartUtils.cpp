@@ -13,6 +13,7 @@
 #include <nn/act/client_cpp.h>
 #include <nn/ccr/sys_caffeine.h>
 #include <nn/sl.h>
+#include <optional>
 #include <proc_ui/procui.h>
 #include <rpxloader/rpxloader.h>
 #include <sysapp/launch.h>
@@ -83,28 +84,65 @@ void loadConsoleAccount(const char *data_uuid) {
     nn::act::Finalize();
 }
 
+class FileStreamWrapper {
+public:
+    static std::unique_ptr<FileStreamWrapper> CreateFromPath(std::string_view path, std::string_view mode = "r") {
+        return std::unique_ptr<FileStreamWrapper>(new FileStreamWrapper(path, mode));
+    }
+
+    ~FileStreamWrapper() {
+        mFileStream.reset();
+        FSDelClient(&mFsClient, FS_ERROR_FLAG_NONE);
+    }
+
+    nn::sl::details::IStreamBase &GetStream() {
+        return *mFileStream;
+    }
+
+private:
+    explicit FileStreamWrapper(std::string_view path, std::string_view mode) {
+        FSAddClient(&mFsClient, FS_ERROR_FLAG_NONE);
+        FSInitCmdBlock(&mCmdBlock);
+        mFileStream = std::make_unique<nn::sl::FileStream>();
+        mFileStream->Initialize(&mFsClient, &mCmdBlock, path.data(), mode.data());
+    }
+
+    std::unique_ptr<nn::sl::FileStream> mFileStream{};
+    FSClient mFsClient{};
+    FSCmdBlock mCmdBlock{};
+};
+
 bool getQuickBoot() {
+    // Waits until the quick start menu has been closed. TODO: abort this checks after a given time?
     auto bootCheck = CCRSysCaffeineBootCheck();
     if (bootCheck == 0) {
         nn::sl::Initialize(MEMAllocFromDefaultHeapEx, MEMFreeToDefaultHeap);
         char path[0x80];
         nn::sl::GetDefaultDatabasePath(path, 0x80, 0x0005001010066000); // ECO process
-        FSCmdBlock cmdBlock;
-        FSInitCmdBlock(&cmdBlock);
-
-        auto fileStream = new nn::sl::FileStream;
-        auto *fsClient  = (FSClient *) memalign(0x40, sizeof(FSClient));
-        if (!fsClient) {
-            DEBUG_FUNCTION_LINE("Couldn't alloc memory for fsClient.");
-            return false;
+        nn::sl::LaunchInfoDatabase launchInfoDatabase;
+        nn::sl::LaunchInfo info;
+        {
+            // In theory the region doesn't even matter.
+            // The region is to load a "system table" into the LaunchInfoDatabase which provides the LaunchInfos for
+            // the Wii U Menu and System Settings. In the code below we check for all possible System Settings title id and
+            // have a fallback to the Wii U Menu... This means we could get away a wrong region, but let's use the correct one
+            // anyway
+            const auto region = []() {
+                if (SYSCheckTitleExists(0x0005001010047000L)) { // JPN System Settings
+                    return nn::sl::REGION_JPN;
+                } else if (SYSCheckTitleExists(0x0005001010047100L)) { // USA System Settings
+                    return nn::sl::REGION_USA;
+                } else if (SYSCheckTitleExists(0x0005001010047200L)) { // EUR System Settings
+                    return nn::sl::REGION_EUR;
+                }
+                return nn::sl::REGION_EUR;
+            }();
+            auto fileStream = FileStreamWrapper::CreateFromPath(path);
+            if (launchInfoDatabase.Load(fileStream->GetStream(), region).IsFailure()) {
+                DEBUG_FUNCTION_LINE_ERR("Failed to load LaunchInfoDatabase");
+                return false;
+            }
         }
-        memset(fsClient, 0, sizeof(*fsClient));
-        FSAddClient(fsClient, FS_ERROR_FLAG_NONE);
-
-        fileStream->Initialize(fsClient, &cmdBlock, path, "r");
-
-        auto database = new nn::sl::LaunchInfoDatabase;
-        database->Load(fileStream, nn::sl::REGION_EUR);
 
         CCRAppLaunchParam data; // load sys caffeine data
         // load app launch param
@@ -112,15 +150,7 @@ bool getQuickBoot() {
 
         loadConsoleAccount(data.uuid);
 
-        // get launch info for id
-        nn::sl::LaunchInfo info;
-        auto result = database->GetLaunchInfoById(&info, data.titleId);
-
-        delete database;
-        delete fileStream;
-
-        FSDelClient(fsClient, FS_ERROR_FLAG_NONE);
-        free(fsClient);
+        auto result = launchInfoDatabase.GetLaunchInfoById(&info, data.titleId);
 
         nn::sl::Finalize();
 
