@@ -132,6 +132,14 @@ bool getQuickBoot() {
             return false;
         }
 
+        if (info.titleId == 0x0005001010047000L ||
+            info.titleId == 0x0005001010047100L ||
+            info.titleId == 0x0005001010047200L) {
+            DEBUG_FUNCTION_LINE("Launch Settings");
+            _SYSLaunchSettings(nullptr);
+            return true;
+        }
+
         if (info.titleId == 0x000500301001220AL ||
             info.titleId == 0x000500301001210AL ||
             info.titleId == 0x000500301001200AL) {
