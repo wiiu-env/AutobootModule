@@ -112,7 +112,7 @@ private:
     FSCmdBlock mCmdBlock{};
 };
 
-bool getQuickBoot() {
+bool launchQuickStartTitle() {
     // Waits until the quick start menu has been closed. TODO: abort this checks after a given time?
     auto bootCheck = CCRSysCaffeineBootCheck();
     if (bootCheck == 0) {
