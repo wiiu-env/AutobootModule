@@ -180,8 +180,10 @@ bool launchQuickStartTitle() {
         if (info.titleId == 0x0005001010047000L ||
             info.titleId == 0x0005001010047100L ||
             info.titleId == 0x0005001010047200L) {
-            DEBUG_FUNCTION_LINE("Launch Settings");
-            _SYSLaunchSettings(nullptr);
+            DEBUG_FUNCTION_LINE("Launch Quick Start Settings");
+            SysAppSettingsArgs args{};
+            args.jumpTo = 103;
+            _SYSLaunchSettings(&args);
             return true;
         }
 
