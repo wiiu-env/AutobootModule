@@ -7,6 +7,7 @@
 #include "logger.h"
 #include <coreinit/debug.h>
 #include <coreinit/filesystem_fsa.h>
+#include <coreinit/title.h>
 #include <gx2/state.h>
 #include <malloc.h>
 #include <mocha/mocha.h>
@@ -14,6 +15,7 @@
 #include <sndcore2/core.h>
 #include <string>
 #include <sys/stat.h>
+#include <sysapp/launch.h>
 #include <vpad/input.h>
 
 void clearScreen() {
@@ -46,6 +48,13 @@ int32_t main(int32_t argc, char **argv) {
     RPXLoaderStatus error3;
     if ((error3 = RPXLoader_InitLibrary()) != RPX_LOADER_RESULT_SUCCESS) {
         DEBUG_FUNCTION_LINE_ERR("AutobootModule: Failed to init RPXLoader. This can be ignored when not running Aroma. Error %s [%d]", RPXLoader_GetStatusStr(error3), error3);
+    }
+
+    // If we are in System Transfer context we need to restart the app to actually
+    if (OSGetTitleID() == 0x0005001010062000L || OSGetTitleID() == 0x0005001010062100L || OSGetTitleID() == 0x0005001010062200L) {
+        _SYSLaunchTitleWithStdArgsInNoSplash(OSGetTitleID(), nullptr);
+        deinitLogging();
+        return 0;
     }
 
     if (launchQuickStartTitle()) {
