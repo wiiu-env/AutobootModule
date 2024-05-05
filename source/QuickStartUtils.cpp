@@ -148,17 +148,17 @@ bool launchQuickStartTitle() {
         // load app launch param
         CCRSysCaffeineGetAppLaunchParam(&data);
 
-        if (data.titleId == 1) { // This id is hardcoded into the nn_sl.rpl
+        if (data.launchInfoDatabaseEntryId == 1) { // This id is hardcoded into the nn_sl.rpl
             DEBUG_FUNCTION_LINE("Launch Quick Start Settings");
             SysAppSettingsArgs args{};
-            args.jumpTo = 103; // quick start settings
+            args.jumpTo = SYS_SETTINGS_JUMP_TO_QUICK_START_SETTINGS; // quick start settings
             _SYSLaunchSettings(&args);
             return true;
         }
 
         loadConsoleAccount(data.uuid);
 
-        auto result = launchInfoDatabase.GetLaunchInfoById(&info, data.titleId);
+        auto result = launchInfoDatabase.GetLaunchInfoById(&info, data.launchInfoDatabaseEntryId);
 
         nn::sl::Finalize();
 
@@ -166,7 +166,6 @@ bool launchQuickStartTitle() {
             DEBUG_FUNCTION_LINE("GetLaunchInfoById failed.");
             return false;
         }
-        DEBUG_FUNCTION_LINE_ERR("%s", info.parameter);
 
         if ((info.titleId & TITLE_ID_HOMEBREW_MASK) == TITLE_ID_HOMEBREW_MASK) {
             std::string homebrewPath = info.parameter;
