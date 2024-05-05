@@ -3,7 +3,6 @@
 #include "DrawUtils.h"
 #include "InputUtils.h"
 #include "PairUtils.h"
-#include "icon_png.h"
 #include "logger.h"
 #include "utils.h"
 #include "version.h"
@@ -81,8 +80,7 @@ void drawMenuScreen(const std::map<uint32_t, std::string> &menu, uint32_t select
 
     // draw top bar
     DrawUtils::setFontSize(24);
-    DrawUtils::drawPNG(16, 2, icon_png);
-    DrawUtils::print(64 + 2, 6 + 24, "Boot Selector");
+    DrawUtils::print(16, 6 + 24, "Boot Selector");
     DrawUtils::drawRectFilled(8, 8 + 24 + 4, SCREEN_WIDTH - 8 * 2, 3, COLOR_WHITE);
     DrawUtils::setFontSize(16);
     DrawUtils::print(SCREEN_WIDTH - 16, 6 + 24, AUTOBOOT_MODULE_VERSION AUTOBOOT_MODULE_VERSION_EXTRA, true);
