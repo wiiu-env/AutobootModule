@@ -7,12 +7,14 @@
 
 #include <coreinit/exit.h>
 #include <coreinit/foreground.h>
+#include <coreinit/launch.h>
 #include <coreinit/memdefaultheap.h>
 #include <coreinit/thread.h>
 #include <nn/acp/title.h>
 #include <nn/act/client_cpp.h>
 #include <nn/ccr/sys_caffeine.h>
 #include <nn/sl.h>
+#include <nsysccr/cdc.h>
 #include <optional>
 #include <proc_ui/procui.h>
 #include <rpxloader/rpxloader.h>
@@ -20,6 +22,7 @@
 #include <sysapp/title.h>
 
 extern "C" void __fini_wut();
+extern "C" void CCRSysCaffeineBootCheckAbort();
 
 #define UPPER_TITLE_ID_HOMEBREW 0x0005000F
 #define TITLE_ID_HOMEBREW_MASK  (((uint64_t) UPPER_TITLE_ID_HOMEBREW) << 32)
@@ -112,8 +115,58 @@ private:
     FSCmdBlock mCmdBlock{};
 };
 
+class QuickStartAutoAbort {
+public:
+    QuickStartAutoAbort() {
+        OSCreateAlarm(&mAlarm);
+        OSSetPeriodicAlarm(&mDRCConnectedAlarm,
+                           OSSecondsToTicks(10),
+                           OSSecondsToTicks(1),
+                           &AbortOnDRCDisconnect);
+        OSSetAlarm(&mAlarm, OSSecondsToTicks(120), AbortQuickStartTitle);
+        mDRCConnected = IsDRCConnected();
+    }
+    ~QuickStartAutoAbort() {
+        OSCancelAlarm(&mDRCConnectedAlarm);
+        OSCancelAlarm(&mAlarm);
+
+        // Reconnect the DRC if it was connected at launch but then disconnected;
+        if (mDRCConnected && !IsDRCConnected()) {
+            DEBUG_FUNCTION_LINE_VERBOSE("Wake up GamePad");
+            CCRCDCWowlWakeDrcArg args = {.state = 1};
+            CCRCDCWowlWakeDrc(&args);
+        }
+    }
+
+    static bool IsDRCConnected() {
+        CCRCDCDrcState state = {};
+        CCRCDCSysGetDrcState(CCR_CDC_DESTINATION_DRC0, &state);
+        return state.state != 0;
+    }
+
+    static void AbortQuickStartTitle(OSAlarm *alarm, OSContext *) {
+        DEBUG_FUNCTION_LINE_VERBOSE("Selecting a title takes too long, lets abort the quick start menu");
+        CCRSysCaffeineBootCheckAbort();
+    }
+
+    static void AbortOnDRCDisconnect(OSAlarm *alarm, OSContext *) {
+        if (!IsDRCConnected()) {
+            DEBUG_FUNCTION_LINE_VERBOSE("GamePad was disconnected, lets abort the quick start menu");
+            CCRSysCaffeineBootCheckAbort();
+        }
+    }
+
+private:
+    OSAlarm mDRCConnectedAlarm{};
+    OSAlarm mAlarm{};
+    bool mDRCConnected = false;
+};
+
 bool launchQuickStartTitle() {
-    // Waits until the quick start menu has been closed. TODO: abort this checks after a given time?
+    // Automatically abort quick start if selecting takes longer than 120 seconds or the DRC disconnects
+    QuickStartAutoAbort quickStartAutoAbort;
+
+    // Waits until the quick start menu has been closed.
     auto bootCheck = CCRSysCaffeineBootCheck();
     if (bootCheck == 0) {
         nn::sl::Initialize(MEMAllocFromDefaultHeapEx, MEMFreeToDefaultHeap);
