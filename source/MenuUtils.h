@@ -13,8 +13,9 @@
 #define COLOR_WHITE              Color(0xffffffff)
 #define COLOR_BLACK              Color(0, 0, 0, 255)
 #define COLOR_BACKGROUND         COLOR_BLACK
-#define COLOR_BACKGROUND_WARN    Color(255, 40, 0, 255)
+#define COLOR_BACKGROUND_WARN    Color(255, 251, 4, 255)
 #define COLOR_TEXT               COLOR_WHITE
+#define COLOR_WARNING            COLOR_BLACK
 #define COLOR_TEXT2              Color(0xB3ffffff)
 #define COLOR_AUTOBOOT           Color(0xaeea00ff)
 #define COLOR_BORDER             Color(204, 204, 204, 255)

@@ -4,15 +4,18 @@
 #include "InputUtils.h"
 #include "PairUtils.h"
 #include "logger.h"
+#include "main.h"
 #include "utils.h"
 #include "version.h"
 #include <coreinit/debug.h>
+#include <coreinit/filesystem_fsa.h>
 #include <coreinit/screen.h>
 #include <coreinit/thread.h>
 #include <cstring>
 #include <gx2/state.h>
 #include <malloc.h>
 #include <memory>
+#include <mocha/mocha.h>
 #include <string>
 #include <sysapp/title.h>
 #include <vector>
@@ -55,7 +58,7 @@ void writeAutobootOption(std::string &configPath, int32_t autobootOption) {
     }
 }
 
-void drawMenuScreen(const std::map<uint32_t, std::string> &menu, uint32_t selectedIndex, uint32_t autobootIndex) {
+void drawMenuScreen(const std::map<uint32_t, std::string> &menu, uint32_t selectedIndex, uint32_t autobootIndex, bool updatesBlocked) {
     DrawUtils::beginDraw();
     DrawUtils::clear(COLOR_BACKGROUND);
 
@@ -92,6 +95,14 @@ void drawMenuScreen(const std::map<uint32_t, std::string> &menu, uint32_t select
     DrawUtils::print(SCREEN_WIDTH - 16, SCREEN_HEIGHT - 8, "\ue000 Choose", true);
     const char *autobootHints = "\ue002/\ue046 Clear Autoboot / \ue003/\ue045 Select Autoboot";
     DrawUtils::print(SCREEN_WIDTH / 2 + DrawUtils::getTextWidth(autobootHints) / 2, SCREEN_HEIGHT - 8, autobootHints, true);
+
+    if (updatesBlocked) {
+        DrawUtils::setFontSize(10);
+        DrawUtils::print(SCREEN_WIDTH - 16, SCREEN_HEIGHT - 24 - 8 - 4 - 10, "Updates blocked! Hold \ue045 + \ue046 to restore Update folder", true);
+    } else {
+        DrawUtils::setFontSize(10);
+        DrawUtils::print(SCREEN_WIDTH - 16, SCREEN_HEIGHT - 24 - 8 - 4 - 10, "Updates not blocked! Hold \ue045 + \ue046 to delete Update folder", true);
+    }
 
     DrawUtils::endDraw();
 }
@@ -133,16 +144,18 @@ int32_t handleMenuScreen(std::string &configPath, int32_t autobootOptionInput, c
         }
     }
 
-
     {
         PairMenu pairMenu;
 
+        int32_t holdUpdateBlockedForFrames = 0;
         while (true) {
             if (pairMenu.ProcessPairScreen()) {
                 continue;
             }
 
+
             InputUtils::InputData input = InputUtils::getControllerInput();
+
             if (input.trigger & VPAD_BUTTON_UP) {
                 selectedIndex--;
 
@@ -164,10 +177,20 @@ int32_t handleMenuScreen(std::string &configPath, int32_t autobootOptionInput, c
                 autobootIndex = -1;
             } else if (input.trigger & (VPAD_BUTTON_Y | VPAD_BUTTON_PLUS)) {
                 autobootIndex = selectedIndex;
+            } else if ((input.hold & (VPAD_BUTTON_PLUS | VPAD_BUTTON_MINUS)) == (VPAD_BUTTON_PLUS | VPAD_BUTTON_MINUS)) {
+                if (holdUpdateBlockedForFrames++ > 50) {
+                    if (gUpdatesBlocked) {
+                        gUpdatesBlocked = !RestoreMLCUpdateDirectory();
+                    } else {
+                        gUpdatesBlocked = DeleteMLCUpdateDirectory();
+                    }
+                    holdUpdateBlockedForFrames = 0;
+                }
+            } else {
+                holdUpdateBlockedForFrames = 0;
             }
 
-
-            drawMenuScreen(menu, selectedIndex, autobootIndex);
+            drawMenuScreen(menu, selectedIndex, autobootIndex, gUpdatesBlocked);
         }
     }
 
@@ -335,7 +358,7 @@ void drawUpdateWarningScreen() {
     DrawUtils::beginDraw();
     DrawUtils::clear(COLOR_BACKGROUND_WARN);
 
-    DrawUtils::setFontColor(COLOR_TEXT);
+    DrawUtils::setFontColor(COLOR_WARNING);
 
     // draw top bar
     DrawUtils::setFontSize(48);
@@ -349,8 +372,12 @@ void drawUpdateWarningScreen() {
     DrawUtils::print(SCREEN_WIDTH / 2 + DrawUtils::getTextWidth(message) / 2, SCREEN_HEIGHT / 2 - 48, message, true);
     message = "Your system might not be blocking updates properly!";
     DrawUtils::print(SCREEN_WIDTH / 2 + DrawUtils::getTextWidth(message) / 2, SCREEN_HEIGHT / 2 - 24, message, true);
+
+    message = "Press \ue002 to block the updates! This can be reverted in the Boot Selector.";
+    DrawUtils::print(SCREEN_WIDTH / 2 + DrawUtils::getTextWidth(message) / 2, SCREEN_HEIGHT / 2 + 24, message, true);
+
     message = "See https://wiiu.hacks.guide/#/block-updates for more information.";
-    DrawUtils::print(SCREEN_WIDTH / 2 + DrawUtils::getTextWidth(message) / 2, SCREEN_HEIGHT / 2 + 0, message, true);
+    DrawUtils::print(SCREEN_WIDTH / 2 + DrawUtils::getTextWidth(message) / 2, SCREEN_HEIGHT / 2 + 64 + 24, message, true);
 
     DrawUtils::setFontSize(16);
 
@@ -360,7 +387,7 @@ void drawUpdateWarningScreen() {
     // draw bottom bar
     DrawUtils::drawRectFilled(8, SCREEN_HEIGHT - 24 - 8 - 4, SCREEN_WIDTH - 8 * 2, 3, COLOR_WHITE);
     DrawUtils::setFontSize(18);
-    const char *exitHints = "\ue000 Continue / \ue001 Don't show this again";
+    const char *exitHints = "\ue000 Continue without blocking / \ue001 Don't show this again";
     DrawUtils::print(SCREEN_WIDTH / 2 + DrawUtils::getTextWidth(exitHints) / 2, SCREEN_HEIGHT - 8, exitHints, true);
 
     DrawUtils::endDraw();
@@ -399,6 +426,9 @@ void handleUpdateWarningScreen() {
 
             InputUtils::InputData input = InputUtils::getControllerInput();
             if (input.trigger & VPAD_BUTTON_A) {
+                break;
+            } else if (input.trigger & VPAD_BUTTON_X) {
+                gUpdatesBlocked = DeleteMLCUpdateDirectory();
                 break;
             } else if (input.trigger & VPAD_BUTTON_B) {
                 f = fopen(UPDATE_SKIP_PATH, "w");
