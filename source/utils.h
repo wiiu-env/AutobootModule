@@ -29,3 +29,7 @@ std::string string_format(const std::string &format, Args... args) {
 }
 
 bool GetTitleIdOfDisc(uint64_t *titleId, bool *discPresent);
+
+bool DeleteMLCUpdateDirectory();
+
+bool RestoreMLCUpdateDirectory();

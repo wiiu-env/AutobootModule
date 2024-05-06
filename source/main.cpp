@@ -31,6 +31,8 @@ void clearScreen() {
     free(buffer);
 }
 
+bool gUpdatesBlocked = false;
+
 int32_t main(int32_t argc, char **argv) {
     initLogging();
     DEBUG_FUNCTION_LINE("Hello from Autoboot Module");
@@ -76,7 +78,16 @@ int32_t main(int32_t argc, char **argv) {
             FSADirectoryHandle dirHandle{};
             if (FSAOpenDir(client, "/vol/storage_mlc01/sys/update", &dirHandle) >= 0) {
                 FSACloseDir(client, dirHandle);
+                gUpdatesBlocked = false;
                 handleUpdateWarningScreen();
+            } else {
+                FSAStat st{};
+                if (FSAGetStat(client, "/vol/storage_mlc01/sys/update", &st) != FS_ERROR_OK) {
+                    DEBUG_FUNCTION_LINE_INFO("Created \"/vol/storage_mlc01/sys/update\" as file");
+                    FSAFileHandle fd;
+                    FSAOpenFileEx(client, "/vol/storage_mlc01/sys/update", "w", static_cast<FSMode>(0x666), FS_OPEN_FLAG_NONE, 0, &fd);
+                }
+                gUpdatesBlocked = true;
             }
         } else {
             DEBUG_FUNCTION_LINE_ERR("Failed to unlock FSA Client");
