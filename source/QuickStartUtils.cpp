@@ -132,7 +132,7 @@ public:
 
         // Reconnect the DRC if it was connected at launch but then disconnected;
         if (mDRCConnected && !IsDRCConnected()) {
-            DEBUG_FUNCTION_LINE_VERBOSE("Wake up GamePad");
+            DEBUG_FUNCTION_LINE("Wake up GamePad");
             CCRCDCWowlWakeDrcArg args = {.state = 1};
             CCRCDCWowlWakeDrc(&args);
         }
@@ -145,14 +145,18 @@ public:
     }
 
     static void AbortQuickStartTitle(OSAlarm *alarm, OSContext *) {
-        DEBUG_FUNCTION_LINE_VERBOSE("Selecting a title takes too long, lets abort the quick start menu");
+        DEBUG_FUNCTION_LINE("Selecting a title takes too long, lets abort the quick start menu");
         CCRSysCaffeineBootCheckAbort();
     }
 
     static void AbortOnDRCDisconnect(OSAlarm *alarm, OSContext *) {
         if (!IsDRCConnected()) {
-            DEBUG_FUNCTION_LINE_VERBOSE("GamePad was disconnected, lets abort the quick start menu");
-            CCRSysCaffeineBootCheckAbort();
+            // The gamepad does reconnect after selecting a title, make sure it's still disconnected after waiting 3 seconds
+            OSSleepTicks(OSSecondsToTicks(3));
+            if (!IsDRCConnected()) {
+                DEBUG_FUNCTION_LINE("GamePad was disconnected, lets abort the quick start menu");
+                CCRSysCaffeineBootCheckAbort();
+            }
         }
     }
 
