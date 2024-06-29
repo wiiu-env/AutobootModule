@@ -1,13 +1,10 @@
-#include <malloc.h>
-
+#include "QuickStartUtils.h"
 #include "BootUtils.h"
 #include "MenuUtils.h"
-#include "QuickStartUtils.h"
 #include "logger.h"
 
 #include <coreinit/exit.h>
 #include <coreinit/foreground.h>
-#include <coreinit/launch.h>
 #include <coreinit/memdefaultheap.h>
 #include <coreinit/thread.h>
 #include <nn/acp/title.h>
@@ -118,17 +115,21 @@ private:
 class QuickStartAutoAbort {
 public:
     QuickStartAutoAbort() {
-        OSCreateAlarm(&mAlarm);
+        OSCreateAlarm(&mDRCConnectedAlarm);
         OSSetPeriodicAlarm(&mDRCConnectedAlarm,
-                           OSSecondsToTicks(10),
+                           OSGetTime() + OSSecondsToTicks(10),
                            OSSecondsToTicks(1),
                            &AbortOnDRCDisconnect);
+        OSCreateAlarm(&mAlarm);
         OSSetAlarm(&mAlarm, OSSecondsToTicks(120), AbortQuickStartTitle);
         mDRCConnected = IsDRCConnected();
     }
     ~QuickStartAutoAbort() {
         OSCancelAlarm(&mDRCConnectedAlarm);
         OSCancelAlarm(&mAlarm);
+
+        OSWaitAlarm(&mDRCConnectedAlarm);
+        OSWaitAlarm(&mAlarm);
 
         // Reconnect the DRC if it was connected at launch but then disconnected;
         if (mDRCConnected && !IsDRCConnected()) {
@@ -140,12 +141,14 @@ public:
 
     static bool IsDRCConnected() {
         CCRCDCDrcState state = {};
-        CCRCDCSysGetDrcState(CCR_CDC_DESTINATION_DRC0, &state);
-        return state.state != 0;
+        if (CCRCDCSysGetDrcState(CCR_CDC_DESTINATION_DRC0, &state) != 0) {
+            return false;
+        }
+        return true;
     }
 
     static void AbortQuickStartTitle(OSAlarm *alarm, OSContext *) {
-        DEBUG_FUNCTION_LINE("Selecting a title takes too long, lets abort the quick start menu");
+        DEBUG_FUNCTION_LINE_INFO("GamePad was disconnected, lets abort the quick start menu");
         CCRSysCaffeineBootCheckAbort();
     }
 
