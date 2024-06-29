@@ -123,18 +123,18 @@ uint64_t getVWiiHBLTitleId() {
     if (client > 0) {
         if (Mocha_UnlockFSClientEx(client) == MOCHA_RESULT_SUCCESS) {
             // mount the slccmpt
-            if (FSAMount(client, "/dev/slccmpt01", "/vol/storage_slccmpt01", FSA_MOUNT_FLAG_GLOBAL_MOUNT, nullptr, 0) >= 0) {
+            if (FSAMount(client, "/dev/slccmpt01", "/vol/storage_abm_slccmpt01", FSA_MOUNT_FLAG_GLOBAL_MOUNT, nullptr, 0) >= 0) {
                 FSStat stat;
 
                 // test if the OHBC or HBC is installed
-                if (FSAGetStat(client, "/vol/storage_slccmpt01/title/00010001/4f484243/content/00000000.app", &stat) >= 0) {
+                if (FSAGetStat(client, "/vol/storage_abm_slccmpt01/title/00010001/4f484243/content/00000000.app", &stat) >= 0) {
                     titleId = 0x000100014F484243L; // 'OHBC'
-                } else if (FSAGetStat(client, "/vol/storage_slccmpt01/title/00010001/4c554c5a/content/00000000.app", &stat) >= 0) {
+                } else if (FSAGetStat(client, "/vol/storage_abm_slccmpt01/title/00010001/4c554c5a/content/00000000.app", &stat) >= 0) {
                     titleId = 0x000100014C554C5AL; // 'LULZ'
                 } else {
                     DEBUG_FUNCTION_LINE("Cannot find HBC");
                 }
-                FSAUnmount(client, "/vol/storage_slccmpt01", static_cast<FSAUnmountFlags>(2));
+                FSAUnmount(client, "/vol/storage_abm_slccmpt01", FSA_UNMOUNT_FLAG_FORCE);
             } else {
                 DEBUG_FUNCTION_LINE_ERR("Failed to mount slccmpt01");
             }
