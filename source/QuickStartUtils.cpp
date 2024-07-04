@@ -2,7 +2,9 @@
 #include "BootUtils.h"
 #include "MenuUtils.h"
 #include "logger.h"
-
+#include "utils/SplashScreenDrawer.h"
+#include "utils/SplashSoundPlayer.h"
+#include "utils/gfx.h"
 #include <coreinit/exit.h>
 #include <coreinit/foreground.h>
 #include <coreinit/memdefaultheap.h>
@@ -351,9 +353,25 @@ bool launchQuickStartTitle() {
         MCP_Close(handle);
         if (err == 0) {
             DEBUG_FUNCTION_LINE("Launch %016llX", titleIdToLaunch);
+            char metaDir[256] = {};
+            auto res          = ACPGetTitleMetaDir(titleIdToLaunch, metaDir, sizeof(metaDir) - 1);
+            if (res == ACP_RESULT_SUCCESS) {
+                GfxInit();
+                {
+                    SplashScreenDrawer splashScreenDrawer(metaDir);
+                    splashScreenDrawer.Draw();
+                    SplashSoundPlayer splashSound(metaDir);
+                    splashSound.Play();
+                }
+                GfxShutdown();
+            } else {
+                DEBUG_FUNCTION_LINE_WARN("Failed to find assets");
+            }
             ACPAssignTitlePatch(&titleInfo);
-            _SYSLaunchTitleWithStdArgsInNoSplash(titleIdToLaunch, nullptr);
+            _SYSLaunchTitleByPathFromLauncher(titleInfo.path, strlen(titleInfo.path));
             return true;
+        } else {
+            DEBUG_FUNCTION_LINE_WARN("Failed to get title info");
         }
 
         DEBUG_FUNCTION_LINE("Launch Wii U Menu!");

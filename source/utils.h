@@ -3,6 +3,8 @@
 #include <cstdint>
 #include <malloc.h>
 #include <memory>
+#include <string_view>
+#include <vector>
 
 template<class T, class... Args>
 std::unique_ptr<T> make_unique_nothrow(Args &&...args) noexcept(noexcept(T(std::forward<Args>(args)...))) {
@@ -33,3 +35,5 @@ bool GetTitleIdOfDisc(uint64_t *titleId, bool *discPresent);
 bool DeleteMLCUpdateDirectory();
 
 bool RestoreMLCUpdateDirectory();
+
+bool LoadFileIntoBuffer(std::string_view path, std::vector<uint8_t> &buffer);
