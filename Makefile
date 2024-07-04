@@ -21,7 +21,7 @@ WUMS_ROOT := $(DEVKITPRO)/wums
 #-------------------------------------------------------------------------------
 TARGET		:=	99_autoboot
 BUILD		:=	build
-SOURCES		:=	source
+SOURCES		:=	source source/utils
 DATA		:=	data
 INCLUDES	:=	source include
 
