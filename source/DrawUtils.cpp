@@ -5,8 +5,11 @@
 #include "utils.h"
 #include <coreinit/cache.h>
 #include <coreinit/memory.h>
+#include <coreinit/savedframe.h>
 #include <coreinit/screen.h>
 #include <cstdlib>
+#include <gx2/display.h>
+#include <gx2/state.h>
 #include <malloc.h>
 #include <png.h>
 
@@ -24,7 +27,23 @@ static SFT pFont              = {};
 
 static Color font_col(0xFFFFFFFF);
 
+void DrawUtils::ClearSavedFrameBuffers() {
+    // If GX2 is running make sure to shut it down and free all existing memory in the saved-frame area.
+    if (GX2GetMainCoreId() != -1) {
+        GX2SetTVEnable(FALSE);
+        GX2SetDRCEnable(FALSE);
+        GX2Shutdown();
+    }
+
+    __OSClearSavedFrame(OS_SAVED_FRAME_A, OS_SAVED_FRAME_SCREEN_TV);
+    __OSClearSavedFrame(OS_SAVED_FRAME_A, OS_SAVED_FRAME_SCREEN_DRC);
+    __OSClearSavedFrame(OS_SAVED_FRAME_B, OS_SAVED_FRAME_SCREEN_TV);
+    __OSClearSavedFrame(OS_SAVED_FRAME_B, OS_SAVED_FRAME_SCREEN_DRC);
+}
+
 void *DrawUtils::InitOSScreen() {
+    ClearSavedFrameBuffers();
+
     OSScreenInit();
 
     uint32_t tvBufferSize  = OSScreenGetBufferSizeEx(SCREEN_TV);

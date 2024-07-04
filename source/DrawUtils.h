@@ -30,6 +30,8 @@ union Color {
 
 class DrawUtils {
 public:
+    static void ClearSavedFrameBuffers();
+
     static void *InitOSScreen();
 
     static void initBuffers(void *tvBuffer, uint32_t tvSize, void *drcBuffer, uint32_t drcSize);
