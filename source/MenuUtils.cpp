@@ -16,6 +16,7 @@
 #include <malloc.h>
 #include <memory>
 #include <mocha/mocha.h>
+#include <sndcore2/core.h>
 #include <string>
 #include <sysapp/title.h>
 #include <vector>
@@ -528,6 +529,9 @@ bool handleDiscInsertScreen(uint64_t expectedTitleId, uint64_t *titleIdToLaunch)
         return true;
     }
 
+    if (!AXIsInit()) {
+        AXInit();
+    }
     // When an unexpected disc was inserted we need to eject it first.
     bool allowDisc = !wrongDiscInserted;
 

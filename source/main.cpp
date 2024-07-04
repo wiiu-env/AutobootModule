@@ -36,8 +36,6 @@ bool gUpdatesBlocked = false;
 int32_t main(int32_t argc, char **argv) {
     initLogging();
     DEBUG_FUNCTION_LINE("Hello from Autoboot Module");
-    AXInit();
-    AXQuit();
 
     InputUtils::Init();
 
@@ -79,6 +77,9 @@ int32_t main(int32_t argc, char **argv) {
             if (FSAOpenDir(client, "/vol/storage_mlc01/sys/update", &dirHandle) >= 0) {
                 FSACloseDir(client, dirHandle);
                 gUpdatesBlocked = false;
+                if (!AXIsInit()) {
+                    AXInit();
+                }
                 handleUpdateWarningScreen();
             } else {
                 FSAStat st{};
@@ -127,6 +128,9 @@ int32_t main(int32_t argc, char **argv) {
         (bootSelection == BOOT_OPTION_HOMEBREW_LAUNCHER && !showHBL) ||
         (bootSelection == BOOT_OPTION_VWII_HOMEBREW_CHANNEL && !showvHBL) ||
         (buttons.hold & VPAD_BUTTON_PLUS)) {
+        if (!AXIsInit()) {
+            AXInit();
+        }
         bootSelection = handleMenuScreen(configPath, bootSelection, menu);
     }
 
@@ -163,6 +167,10 @@ int32_t main(int32_t argc, char **argv) {
     InputUtils::DeInit();
     Mocha_DeInitLibrary();
     deinitLogging();
+    if (AXIsInit()) {
+        AXQuit();
+    }
+
 
     return 0;
 }
