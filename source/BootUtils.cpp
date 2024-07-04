@@ -1,6 +1,5 @@
 #include "BootUtils.h"
 #include "ACTAccountInfo.h"
-#include "DrawUtils.h"
 #include "MenuUtils.h"
 #include "logger.h"
 #include <codecvt>
@@ -12,6 +11,7 @@
 #include <nn/act.h>
 #include <nn/cmpt/cmpt.h>
 #include <padscore/kpad.h>
+#include <sndcore2/core.h>
 #include <string>
 #include <sysapp/launch.h>
 #include <sysapp/title.h>
@@ -74,6 +74,9 @@ void handleAccountSelection() {
         }
 
         if (accountInfoList.size() > 0) {
+            if (!AXIsInit()) {
+                AXInit();
+            }
             auto slot = handleAccountSelectScreen(accountInfoList);
 
             DEBUG_FUNCTION_LINE("Load slot %d", slot);
