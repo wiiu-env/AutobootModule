@@ -157,7 +157,7 @@ public:
             // The gamepad does reconnect after selecting a title, make sure it's still disconnected after waiting 3 seconds
             OSSleepTicks(OSSecondsToTicks(3));
             if (!IsDRCConnected()) {
-                DEBUG_FUNCTION_LINE("GamePad was disconnected, lets abort the quick start menu");
+                DEBUG_FUNCTION_LINE_INFO("GamePad was disconnected, lets abort the quick start menu");
                 CCRSysCaffeineBootCheckAbort();
             }
         }

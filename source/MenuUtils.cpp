@@ -110,7 +110,7 @@ void drawMenuScreen(const std::map<uint32_t, std::string> &menu, uint32_t select
 int32_t handleMenuScreen(std::string &configPath, int32_t autobootOptionInput, const std::map<uint32_t, std::string> &menu) {
     auto screenBuffer = DrawUtils::InitOSScreen();
     if (!screenBuffer) {
-        OSFatal("Failed to alloc memory for screen");
+        OSFatal("AutobootModule: Failed to alloc memory for screen");
     }
 
     uint32_t tvBufferSize  = OSScreenGetBufferSizeEx(SCREEN_TV);
@@ -118,7 +118,7 @@ int32_t handleMenuScreen(std::string &configPath, int32_t autobootOptionInput, c
 
     DrawUtils::initBuffers(screenBuffer, tvBufferSize, (void *) ((uint32_t) screenBuffer + tvBufferSize), drcBufferSize);
     if (!DrawUtils::initFont()) {
-        OSFatal("Failed to init font");
+        OSFatal("AutobootModule: Failed to init font");
     }
 
     int32_t selectedIndex = autobootOptionInput > 0 ? autobootOptionInput : 0;
@@ -225,7 +225,7 @@ int32_t handleMenuScreen(std::string &configPath, int32_t autobootOptionInput, c
 nn::act::SlotNo handleAccountSelectScreen(const std::vector<std::shared_ptr<AccountInfo>> &data) {
     auto screenBuffer = DrawUtils::InitOSScreen();
     if (!screenBuffer) {
-        OSFatal("Failed to alloc memory for screen");
+        OSFatal("AutobootModule: Failed to alloc memory for screen");
     }
 
     uint32_t tvBufferSize  = OSScreenGetBufferSizeEx(SCREEN_TV);
@@ -233,7 +233,7 @@ nn::act::SlotNo handleAccountSelectScreen(const std::vector<std::shared_ptr<Acco
 
     DrawUtils::initBuffers(screenBuffer, tvBufferSize, (void *) ((uint32_t) screenBuffer + tvBufferSize), drcBufferSize);
     if (!DrawUtils::initFont()) {
-        OSFatal("Failed to init font");
+        OSFatal("AutobootModule: Failed to init font");
     }
 
     int32_t selected = 0;
@@ -403,7 +403,7 @@ void handleUpdateWarningScreen() {
 
     auto screenBuffer = DrawUtils::InitOSScreen();
     if (!screenBuffer) {
-        OSFatal("Failed to alloc memory for screen");
+        OSFatal("AutobootModule: Failed to alloc memory for screen");
     }
 
     uint32_t tvBufferSize  = OSScreenGetBufferSizeEx(SCREEN_TV);
@@ -411,7 +411,7 @@ void handleUpdateWarningScreen() {
 
     DrawUtils::initBuffers(screenBuffer, tvBufferSize, (void *) ((uint32_t) screenBuffer + tvBufferSize), drcBufferSize);
     if (!DrawUtils::initFont()) {
-        OSFatal("Failed to init font");
+        OSFatal("AutobootModule: Failed to init font");
     }
 
     {
