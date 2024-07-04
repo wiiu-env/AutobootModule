@@ -21,7 +21,6 @@
 #include <sysapp/title.h>
 
 extern "C" void __fini_wut();
-extern "C" void CCRSysCaffeineBootCheckAbort();
 
 #define UPPER_TITLE_ID_HOMEBREW 0x0005000F
 #define TITLE_ID_HOMEBREW_MASK  (((uint64_t) UPPER_TITLE_ID_HOMEBREW) << 32)
