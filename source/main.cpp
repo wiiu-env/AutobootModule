@@ -7,9 +7,8 @@
 #include "logger.h"
 #include <coreinit/debug.h>
 #include <coreinit/filesystem_fsa.h>
+#include <coreinit/thread.h>
 #include <coreinit/title.h>
-#include <gx2/state.h>
-#include <malloc.h>
 #include <mocha/mocha.h>
 #include <rpxloader/rpxloader.h>
 #include <sndcore2/core.h>
@@ -18,19 +17,6 @@
 #include <sysapp/launch.h>
 #include <vpad/input.h>
 
-void clearScreen() {
-    auto buffer = DrawUtils::InitOSScreen();
-    if (!buffer) {
-        OSFatal("Failed to alloc memory for screen");
-    }
-    DrawUtils::clear(COLOR_BACKGROUND);
-
-    // Call GX2Init to shut down OSScreen
-    GX2Init(nullptr);
-
-    free(buffer);
-}
-
 bool gUpdatesBlocked = false;
 
 int32_t main(int32_t argc, char **argv) {
@@ -38,9 +24,6 @@ int32_t main(int32_t argc, char **argv) {
     DEBUG_FUNCTION_LINE("Hello from Autoboot Module");
 
     InputUtils::Init();
-
-    // Clear screen to avoid screen corruptions when loading the Wii U Menu
-    clearScreen();
 
     initExternalStorage();
 
@@ -68,6 +51,8 @@ int32_t main(int32_t argc, char **argv) {
 
     InputUtils::InputData buttons = InputUtils::getControllerInput();
 
+    bool hadMenu = false;
+
     FSAInit();
     auto client = FSAAddClient(nullptr);
     if (client > 0) {
@@ -81,6 +66,7 @@ int32_t main(int32_t argc, char **argv) {
                     AXInit();
                 }
                 handleUpdateWarningScreen();
+                hadMenu = true;
             } else {
                 FSAStat st{};
                 if (FSAGetStat(client, "/vol/storage_mlc01/sys/update", &st) != FS_ERROR_OK) {
@@ -132,6 +118,7 @@ int32_t main(int32_t argc, char **argv) {
             AXInit();
         }
         bootSelection = handleMenuScreen(configPath, bootSelection, menu);
+        hadMenu       = true;
     }
 
     if (bootSelection >= 0) {
@@ -171,6 +158,9 @@ int32_t main(int32_t argc, char **argv) {
         AXQuit();
     }
 
+    if (!hadMenu) {
+        DrawUtils::ClearSavedFrameBuffers();
+    }
 
     return 0;
 }

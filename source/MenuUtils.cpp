@@ -452,6 +452,8 @@ void handleUpdateWarningScreen() {
 
     DrawUtils::deinitFont();
 
+    GX2Init(nullptr);
+
     free(screenBuffer);
 }
 
@@ -492,23 +494,6 @@ bool handleDiscInsertScreen(uint64_t expectedTitleId, uint64_t *titleIdToLaunch)
         return true;
     }
 
-    auto result       = false;
-    auto screenBuffer = DrawUtils::InitOSScreen();
-    if (!screenBuffer) {
-        OSFatal("Failed to alloc memory for screen");
-    }
-
-    uint32_t tvBufferSize  = OSScreenGetBufferSizeEx(SCREEN_TV);
-    uint32_t drcBufferSize = OSScreenGetBufferSizeEx(SCREEN_DRC);
-
-    DrawUtils::initBuffers(screenBuffer, tvBufferSize, (void *) ((uint32_t) screenBuffer + tvBufferSize), drcBufferSize);
-    if (!DrawUtils::initFont()) {
-        OSFatal("Failed to init font");
-    }
-    DrawUtils::beginDraw();
-    DrawUtils::clear(COLOR_BACKGROUND);
-    DrawUtils::endDraw();
-
     uint64_t titleIdOfDisc = 0;
     bool discInserted;
 
@@ -524,17 +509,32 @@ bool handleDiscInsertScreen(uint64_t expectedTitleId, uint64_t *titleIdToLaunch)
 
     if (discInserted && !wrongDiscInserted) {
         *titleIdToLaunch = expectedTitleId;
-        DrawUtils::deinitFont();
-        free(screenBuffer);
         return true;
     }
 
     if (!AXIsInit()) {
         AXInit();
     }
+
+    bool result;
+    auto screenBuffer = DrawUtils::InitOSScreen();
+    if (!screenBuffer) {
+        OSFatal("AutobootModule: Failed to alloc memory for screen");
+    }
+
+    uint32_t tvBufferSize  = OSScreenGetBufferSizeEx(SCREEN_TV);
+    uint32_t drcBufferSize = OSScreenGetBufferSizeEx(SCREEN_DRC);
+
+    DrawUtils::initBuffers(screenBuffer, tvBufferSize, (void *) ((uint32_t) screenBuffer + tvBufferSize), drcBufferSize);
+    if (!DrawUtils::initFont()) {
+        OSFatal("AutobootModule: Failed to init font");
+    }
+    DrawUtils::beginDraw();
+    DrawUtils::clear(COLOR_BACKGROUND);
+    DrawUtils::endDraw();
+
     // When an unexpected disc was inserted we need to eject it first.
     bool allowDisc = !wrongDiscInserted;
-
     {
         PairMenu pairMenu;
 
@@ -573,6 +573,9 @@ bool handleDiscInsertScreen(uint64_t expectedTitleId, uint64_t *titleIdToLaunch)
     DrawUtils::endDraw();
 
     DrawUtils::deinitFont();
+
+    // Call GX2Init to shut down OSScreen
+    GX2Init(nullptr);
 
     free(screenBuffer);
 
