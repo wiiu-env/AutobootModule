@@ -52,3 +52,4 @@ docker run -it --rm -v ${PWD}:/project autobootmodule-builder make clean
 ## Credits
 - GaryOderNichts
 - Maschell
+- Crementif
