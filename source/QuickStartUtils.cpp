@@ -113,18 +113,22 @@ private:
     FSCmdBlock mCmdBlock{};
 };
 
+static bool sQuickStartTitleSelected = false;
+
 class QuickStartAutoAbort {
 public:
     QuickStartAutoAbort() {
         OSCreateAlarm(&mDRCConnectedAlarm);
+        OSSetAlarmUserData(&mDRCConnectedAlarm, &disconnectedCount);
         OSSetPeriodicAlarm(&mDRCConnectedAlarm,
                            OSGetTime() + OSSecondsToTicks(10),
-                           OSSecondsToTicks(1),
+                           OSSecondsToTicks(3),
                            &AbortOnDRCDisconnect);
         OSCreateAlarm(&mAlarm);
         OSSetAlarm(&mAlarm, OSSecondsToTicks(120), AbortQuickStartTitle);
         mDRCConnected = IsDRCConnected();
     }
+
     ~QuickStartAutoAbort() {
         OSCancelAlarm(&mDRCConnectedAlarm);
         OSCancelAlarm(&mAlarm);
@@ -149,15 +153,17 @@ public:
     }
 
     static void AbortQuickStartTitle(OSAlarm *alarm, OSContext *) {
-        DEBUG_FUNCTION_LINE_INFO("GamePad was disconnected, lets abort the quick start menu");
+        DEBUG_FUNCTION_LINE_INFO("Canceling quick start menu after 2 minutes");
         CCRSysCaffeineBootCheckAbort();
     }
 
     static void AbortOnDRCDisconnect(OSAlarm *alarm, OSContext *) {
+        if (sQuickStartTitleSelected) {
+            return;
+        }
         if (!IsDRCConnected()) {
-            // The gamepad does reconnect after selecting a title, make sure it's still disconnected after waiting 3 seconds
-            OSSleepTicks(OSSecondsToTicks(3));
-            if (!IsDRCConnected()) {
+            int *disconnectedCount = (int *) OSGetAlarmUserData(alarm);
+            if (++(*disconnectedCount) >= 2) {
                 DEBUG_FUNCTION_LINE_INFO("GamePad was disconnected, lets abort the quick start menu");
                 CCRSysCaffeineBootCheckAbort();
             }
@@ -167,7 +173,8 @@ public:
 private:
     OSAlarm mDRCConnectedAlarm{};
     OSAlarm mAlarm{};
-    bool mDRCConnected = false;
+    bool mDRCConnected    = false;
+    int disconnectedCount = 0;
 };
 
 bool launchQuickStartTitle() {
@@ -177,6 +184,8 @@ bool launchQuickStartTitle() {
     // Waits until the quick start menu has been closed.
     auto bootCheck = CCRSysCaffeineBootCheck();
     if (bootCheck == 0) {
+        sQuickStartTitleSelected = true;
+
         nn::sl::Initialize(MEMAllocFromDefaultHeapEx, MEMFreeToDefaultHeap);
         char path[0x80];
         nn::sl::GetDefaultDatabasePath(path, 0x80, 0x0005001010066000); // ECO process
@@ -184,7 +193,7 @@ bool launchQuickStartTitle() {
         nn::sl::LaunchInfo info;
         {
             // In theory the region doesn't even matter.
-            // The region is to load a "system table" into the LaunchInfoDatabase which provides the LaunchInfos for
+            // The region is used to load a "system table" into the LaunchInfoDatabase which provides the LaunchInfos for
             // the Wii U Menu and System Settings. In the code below we check for all possible System Settings title id and
             // have a fallback to the Wii U Menu... This means we could get away a wrong region, but let's use the correct one
             // anyway
