@@ -4,6 +4,7 @@
 #include "logger.h"
 #include <codecvt>
 #include <coreinit/filesystem_fsa.h>
+#include <filesystem>
 #include <locale>
 #include <malloc.h>
 #include <memory>
@@ -54,9 +55,7 @@ void handleAccountSelection() {
             accountInfo->slot                        = i;
             auto result                              = nn::act::GetMiiNameEx(reinterpret_cast<int16_t *>(nameOut), i);
             if (result.IsSuccess()) {
-                std::u16string source;
-                std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> convert;
-                accountInfo->name = convert.to_bytes((char16_t *) nameOut);
+                accountInfo->name = std::filesystem::path(nameOut).string();
             } else {
                 accountInfo->name = "[UNKNOWN]";
             }
