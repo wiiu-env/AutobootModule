@@ -84,7 +84,7 @@ void SplashSoundPlayer::Play() {
 
     std::span<uint8_t> audioBufferIn(mBuffer.data() + 8, mBuffer.size() - 8);
 
-    DEBUG_FUNCTION_LINE("Got audio buffer from foreground bucket @ %8.8x len = %d", audioBuffer, audioBufferLen);
+    DEBUG_FUNCTION_LINE("Got audio buffer from foreground bucket @ %p len = %d", audioBuffer, audioBufferLen);
     if (audioBufferLen < mBuffer.size()) {
         DEBUG_FUNCTION_LINE_ERR("buffer not big enough");
         return;
