@@ -221,7 +221,7 @@ static BOOL initBucketHeap() {
 
     sGfxHeapForeground = MEMCreateExpHeapEx(base, size, 0);
     if (!sGfxHeapForeground) {
-        DEBUG_FUNCTION_LINE_WARN("%s: MEMCreateExpHeapEx(0x%08X, 0x%X, 0)", __FUNCTION__, base, size);
+        DEBUG_FUNCTION_LINE_WARN("%s: MEMCreateExpHeapEx(0x%p, 0x%X, 0)", __FUNCTION__, base, size);
         return FALSE;
     }
 
