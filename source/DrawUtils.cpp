@@ -54,6 +54,8 @@ void *DrawUtils::InitOSScreen() {
         return nullptr;
     }
 
+    memset(screenBuffer, 0, tvBufferSize + drcBufferSize);
+
     OSScreenSetBufferEx(SCREEN_TV, screenBuffer);
     OSScreenSetBufferEx(SCREEN_DRC, screenBuffer + tvBufferSize);
 
