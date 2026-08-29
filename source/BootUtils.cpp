@@ -4,6 +4,8 @@
 #include "logger.h"
 #include <codecvt>
 #include <coreinit/filesystem_fsa.h>
+#include <coreinit/thread.h>
+#include <coreinit/time.h>
 #include <filesystem>
 #include <locale>
 #include <malloc.h>
@@ -85,17 +87,25 @@ void handleAccountSelection() {
     nn::act::Finalize();
 }
 
+// Exported by nn_cmpt.rpl but not declared in wut's cmpt.h; the Wii U Menu
+// calls this before launching vWii titles to signal GamePad support.
+extern "C" int32_t CMPTAcctSetDrcCtrlEnabled(int32_t enabled);
+
 static void launchvWiiTitle(uint64_t titleId) {
     // we need to init kpad for cmpt
     KPADInit();
 
-    // Try to find a screen type that works
-    CMPTAcctSetScreenType(CMPT_SCREEN_TYPE_BOTH);
-    if (CMPTCheckScreenState() < 0) {
-        CMPTAcctSetScreenType(CMPT_SCREEN_TYPE_DRC);
-        if (CMPTCheckScreenState() < 0) {
-            CMPTAcctSetScreenType(CMPT_SCREEN_TYPE_TV);
-        }
+    // Disable the GamePad and force TV-only output so autoboot works with
+    // the GamePad powered off,
+    // see https://github.com/wiiu-env/AutobootModule/issues/67
+    CMPTAcctSetDrcCtrlEnabled(0);
+    CMPTAcctSetScreenType(CMPT_SCREEN_TYPE_TV);
+
+    // On autoboot this code runs much earlier than a manual selection from
+    // the boot menu, and launching before the compat subsystem is ready
+    // results in a black screen. Wait for it, but launch anyway after 5s.
+    for (int i = 0; i < 50 && CMPTCheckScreenState() < 0; i++) {
+        OSSleepTicks(OSMillisecondsToTicks(100));
     }
 
     uint32_t dataSize = 0;
