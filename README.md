@@ -26,6 +26,19 @@ Mii Maker,0x000500101004A200
 
 The title id decides how the entry is launched: vWii titles through the vWii, Wii U titles directly. Entries whose title is not installed are left out of the menu. Up to 4 entries are shown, as many as fit: the menu has room for 7 rows in all. System applets (title ids starting with 00050030, like the Internet Browser) can't be custom entries. A custom entry can be set as the autoboot title like any other.
 
+### Menu order
+
+The menu normally shows the built-in entries first and custom entries after them. To choose the order, name built-in entries in `bootOptions.cfg` with an `@` line; entries then appear in the order of the lines:
+
+```
+My vWii Channel,0x0001000152494654
+@wiiu_menu
+@vwii_homebrew_channel
+@vwii_system_menu
+```
+
+The names are the ones `autoboot.cfg` uses: `@wiiu_menu`, `@homebrew_launcher`, `@vwii_system_menu` and `@vwii_homebrew_channel`. Built-in entries without a line follow the listed ones in the usual order, so none can disappear by accident, and an entry that isn't available (the Homebrew Launcher without its installer, the vWii Homebrew Channel without HBC) is still left out. Without `@` lines the menu keeps the usual order.
+
 ## Buildflags
 
 ### Logging

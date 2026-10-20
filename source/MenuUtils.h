@@ -6,6 +6,7 @@
 #include <memory>
 #include <nn/act.h>
 #include <string>
+#include <utility>
 #include <vector>
 
 #define UPDATE_SKIP_PATH         "fs:/vol/external01/wiiu/environments/skipUpdateWarn"
@@ -35,18 +36,24 @@ enum {
 // The menu doesn't scroll, and an eighth row would cover the update status line.
 #define MAX_MENU_ROWS           7
 
+// Boot menu entries (option id, name) in the order they are shown.
+using BootMenu = std::vector<std::pair<uint32_t, std::string>>;
+
 struct CustomBootOption {
     std::string name;
     uint64_t titleId;
 };
 
-std::vector<CustomBootOption> readCustomBootOptions(const std::string &path);
+// Reads the custom entries from bootOptions.cfg. When the file also has "@" lines naming
+// built-in entries, `menuOrder` gets every listed entry's option id in the file's order;
+// without them it stays empty and the menu keeps the usual order.
+std::vector<CustomBootOption> readCustomBootOptions(const std::string &path, std::vector<uint32_t> &menuOrder);
 
 int32_t readAutobootOption(std::string &configPath, const std::vector<CustomBootOption> &customOptions);
 
 void writeAutobootOption(std::string &configPath, int32_t autobootOption, const std::vector<CustomBootOption> &customOptions);
 
-int32_t handleMenuScreen(std::string &configPath, int32_t autobootOptionInput, const std::map<uint32_t, std::string> &menu,
+int32_t handleMenuScreen(std::string &configPath, int32_t autobootOptionInput, const BootMenu &menu,
                          const std::vector<CustomBootOption> &customOptions);
 
 nn::act::SlotNo handleAccountSelectScreen(const std::vector<std::shared_ptr<AccountInfo>> &data);

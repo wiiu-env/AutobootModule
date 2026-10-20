@@ -22,6 +22,7 @@
 #include <mocha/mocha.h>
 #include <sndcore2/core.h>
 #include <string>
+#include <strings.h>
 #include <sysapp/title.h>
 #include <vector>
 
@@ -49,18 +50,52 @@ static void trimInPlace(char *str) {
     memmove(str, start, end - start + 1);
 }
 
-std::vector<CustomBootOption> readCustomBootOptions(const std::string &path) {
+// The built-in entry an "@" line names, by the same names autoboot.cfg uses, in any case; -1 if none.
+static int32_t builtInOptionNamed(const char *name) {
+    for (uint32_t i = 0; i < sizeof(autoboot_config_strings) / sizeof(char *); i++) {
+        if (strcasecmp(autoboot_config_strings[i], name) == 0) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+std::vector<CustomBootOption> readCustomBootOptions(const std::string &path, std::vector<uint32_t> &menuOrder) {
     std::vector<CustomBootOption> result;
+    menuOrder.clear();
     FILE *f = fopen(path.c_str(), "r");
     if (!f) {
         return result;
     }
 
     // One entry per line: "Name,0x0001000152494654". The title id decides how it is launched.
+    // A line "@name" places a built-in entry ("@wiiu_menu") between them.
+    std::vector<uint32_t> order;
+    bool namesBuiltIns = false;
+    bool tooMany       = false;
     char line[256];
+    bool firstLine = true;
     while (fgets(line, sizeof(line), f)) {
+        // Some editors start the file with a UTF-8 byte order mark.
+        if (firstLine && strncmp(line, "\xEF\xBB\xBF", 3) == 0) {
+            memmove(line, line + 3, strlen(line + 3) + 1);
+        }
+        firstLine = false;
         trimInPlace(line);
         if (line[0] == '\0' || line[0] == '#') {
+            continue;
+        }
+
+        if (line[0] == '@') {
+            char *name = line + 1;
+            trimInPlace(name);
+            int32_t builtIn = builtInOptionNamed(name);
+            if (builtIn < 0) {
+                DEBUG_FUNCTION_LINE_WARN("bootOptions.cfg: \"%s\" is not a built-in entry", line);
+                continue;
+            }
+            order.push_back(builtIn);
+            namesBuiltIns = true;
             continue;
         }
 
@@ -102,12 +137,20 @@ std::vector<CustomBootOption> readCustomBootOptions(const std::string &path) {
         }
 
         if (result.size() >= MAX_CUSTOM_BOOT_OPTIONS) {
-            DEBUG_FUNCTION_LINE_WARN("bootOptions.cfg: only the first %d entries are used", MAX_CUSTOM_BOOT_OPTIONS);
-            break;
+            // Keep reading: "@" lines further down still count.
+            if (!tooMany) {
+                DEBUG_FUNCTION_LINE_WARN("bootOptions.cfg: only the first %d entries are used", MAX_CUSTOM_BOOT_OPTIONS);
+                tooMany = true;
+            }
+            continue;
         }
+        order.push_back(BOOT_OPTION_CUSTOM_BASE + result.size());
         result.push_back({line, titleId});
     }
     fclose(f);
+    if (namesBuiltIns) {
+        menuOrder = order;
+    }
     return result;
 }
 
@@ -160,7 +203,7 @@ void writeAutobootOption(std::string &configPath, int32_t autobootOption, const 
     }
 }
 
-void drawMenuScreen(const std::map<uint32_t, std::string> &menu, uint32_t selectedIndex, uint32_t autobootIndex, bool updatesBlocked) {
+void drawMenuScreen(const BootMenu &menu, uint32_t selectedIndex, uint32_t autobootIndex, bool updatesBlocked) {
     DrawUtils::beginDraw();
     DrawUtils::clear(COLOR_BACKGROUND);
 
@@ -209,7 +252,7 @@ void drawMenuScreen(const std::map<uint32_t, std::string> &menu, uint32_t select
     DrawUtils::endDraw();
 }
 
-int32_t handleMenuScreen(std::string &configPath, int32_t autobootOptionInput, const std::map<uint32_t, std::string> &menu,
+int32_t handleMenuScreen(std::string &configPath, int32_t autobootOptionInput, const BootMenu &menu,
                          const std::vector<CustomBootOption> &customOptions) {
     auto screenBuffer = DrawUtils::InitOSScreen();
     if (!screenBuffer) {
@@ -224,31 +267,24 @@ int32_t handleMenuScreen(std::string &configPath, int32_t autobootOptionInput, c
         OSFatal("AutobootModule: Failed to init font");
     }
 
-    int32_t selectedIndex = autobootOptionInput > 0 ? autobootOptionInput : 0;
-    int autobootIndex     = autobootOptionInput;
+    // Convert option ids to positions in the menu (-1 if not shown). With no
+    // autoboot option, the cursor starts on the Wii U Menu.
+    auto indexOf = [&menu](int32_t id) {
+        for (uint32_t i = 0; i < menu.size(); i++) {
+            if ((int32_t) menu[i].first == id) {
+                return (int32_t) i;
+            }
+        }
+        return -1;
+    };
+    int autobootIndex     = autobootOptionInput >= 0 ? indexOf(autobootOptionInput) : -1;
+    int32_t selectedIndex = autobootIndex >= 0 ? autobootIndex : indexOf(BOOT_OPTION_WII_U_MENU);
+    if (selectedIndex < 0) {
+        selectedIndex = 0;
+    }
     // Set by X or Y: the saved choice is written even if it matches the input, so X can clear
     // a saved custom entry whose title isn't installed (the menu gets -1 for it).
     bool autobootChanged = false;
-
-    // "Convert" id to index
-    int32_t offset = 0;
-    for (auto &item : menu) {
-        if ((uint32_t) selectedIndex == item.first) {
-            selectedIndex = offset;
-            break;
-        }
-        offset++;
-    }
-    if (autobootIndex > 0) {
-        offset = 0;
-        for (auto &item : menu) {
-            if ((uint32_t) autobootIndex == item.first) {
-                autobootIndex = offset;
-                break;
-            }
-            offset++;
-        }
-    }
 
     {
         PairMenu pairMenu;
