@@ -103,6 +103,7 @@ int32_t main(int32_t argc, char **argv) {
 
     std::vector<uint32_t> menuOrder;
     auto customOptions    = readCustomBootOptions(bootOptionsPath, menuOrder);
+    const bool ordered    = !menuOrder.empty();
     int32_t bootSelection = readAutobootOption(configPath, customOptions);
 
     // The usual order: the built-in entries, then the custom ones. Entries that bootOptions.cfg
@@ -175,7 +176,7 @@ int32_t main(int32_t argc, char **argv) {
         // Launcher or vWii Homebrew Channel) stays saved and comes back once it's available again,
         // instead of being preselected or overwritten by the menu.
         int32_t menuInput = (bootSelection >= 0 && !inMenu(bootSelection)) ? -1 : bootSelection;
-        bootSelection     = handleMenuScreen(configPath, menuInput, menu, customOptions);
+        bootSelection     = handleMenuScreen(configPath, menuInput, menu, customOptions, ordered);
         hadMenu           = true;
     }
 

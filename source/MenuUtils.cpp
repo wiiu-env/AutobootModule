@@ -253,7 +253,7 @@ void drawMenuScreen(const BootMenu &menu, uint32_t selectedIndex, uint32_t autob
 }
 
 int32_t handleMenuScreen(std::string &configPath, int32_t autobootOptionInput, const BootMenu &menu,
-                         const std::vector<CustomBootOption> &customOptions) {
+                         const std::vector<CustomBootOption> &customOptions, bool ordered) {
     auto screenBuffer = DrawUtils::InitOSScreen();
     if (!screenBuffer) {
         OSFatal("AutobootModule: Failed to alloc memory for screen");
@@ -268,7 +268,8 @@ int32_t handleMenuScreen(std::string &configPath, int32_t autobootOptionInput, c
     }
 
     // Convert option ids to positions in the menu (-1 if not shown). With no
-    // autoboot option, the cursor starts on the Wii U Menu.
+    // autoboot option, the cursor starts on the first entry when bootOptions.cfg
+    // sets the order, else on the Wii U Menu.
     auto indexOf = [&menu](int32_t id) {
         for (uint32_t i = 0; i < menu.size(); i++) {
             if ((int32_t) menu[i].first == id) {
@@ -278,7 +279,7 @@ int32_t handleMenuScreen(std::string &configPath, int32_t autobootOptionInput, c
         return -1;
     };
     int autobootIndex     = autobootOptionInput >= 0 ? indexOf(autobootOptionInput) : -1;
-    int32_t selectedIndex = autobootIndex >= 0 ? autobootIndex : indexOf(BOOT_OPTION_WII_U_MENU);
+    int32_t selectedIndex = autobootIndex >= 0 ? autobootIndex : (ordered ? 0 : indexOf(BOOT_OPTION_WII_U_MENU));
     if (selectedIndex < 0) {
         selectedIndex = 0;
     }

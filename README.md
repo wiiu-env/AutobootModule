@@ -37,7 +37,7 @@ My vWii Channel,0x0001000152494654
 @vwii_system_menu
 ```
 
-The names are the ones `autoboot.cfg` uses: `@wiiu_menu`, `@homebrew_launcher`, `@vwii_system_menu` and `@vwii_homebrew_channel`. Built-in entries without a line follow the listed ones in the usual order, so none can disappear by accident, and an entry that isn't available (the Homebrew Launcher without its installer, the vWii Homebrew Channel without HBC) is still left out. Without `@` lines the menu keeps the usual order.
+The names are the ones `autoboot.cfg` uses: `@wiiu_menu`, `@homebrew_launcher`, `@vwii_system_menu` and `@vwii_homebrew_channel`. Built-in entries without a line follow the listed ones in the usual order, so none can disappear by accident, and an entry that isn't available (the Homebrew Launcher without its installer, the vWii Homebrew Channel without HBC) is still left out. Without `@` lines the menu keeps the usual order. With `@` lines and no autoboot entry, the cursor starts on the first entry instead of the Wii U Menu.
 
 ## Buildflags
 

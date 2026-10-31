@@ -53,8 +53,10 @@ int32_t readAutobootOption(std::string &configPath, const std::vector<CustomBoot
 
 void writeAutobootOption(std::string &configPath, int32_t autobootOption, const std::vector<CustomBootOption> &customOptions);
 
+// `ordered`: bootOptions.cfg sets the menu order; with no autoboot entry the cursor then
+// starts on the first entry instead of the Wii U Menu.
 int32_t handleMenuScreen(std::string &configPath, int32_t autobootOptionInput, const BootMenu &menu,
-                         const std::vector<CustomBootOption> &customOptions);
+                         const std::vector<CustomBootOption> &customOptions, bool ordered);
 
 nn::act::SlotNo handleAccountSelectScreen(const std::vector<std::shared_ptr<AccountInfo>> &data);
 
