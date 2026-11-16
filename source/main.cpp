@@ -114,10 +114,12 @@ int32_t main(int32_t argc, char **argv) {
     }
     for (uint32_t i = 0; i < customOptions.size(); i++) {
         // Only offer titles that are installed, so a stale entry can never be launched.
-        if (titleExists(customOptions[i].titleId)) {
-            menu[BOOT_OPTION_CUSTOM_BASE + i] = customOptions[i].name;
-        } else {
+        if (!titleExists(customOptions[i].titleId)) {
             DEBUG_FUNCTION_LINE_WARN("bootOptions.cfg: %016llx (%s) is not installed", customOptions[i].titleId, customOptions[i].name.c_str());
+        } else if (menu.size() >= MAX_MENU_ROWS) {
+            DEBUG_FUNCTION_LINE_WARN("bootOptions.cfg: no room in the menu for %016llx (%s)", customOptions[i].titleId, customOptions[i].name.c_str());
+        } else {
+            menu[BOOT_OPTION_CUSTOM_BASE + i] = customOptions[i].name;
         }
     }
 

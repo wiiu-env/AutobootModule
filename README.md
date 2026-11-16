@@ -24,7 +24,7 @@ My vWii Channel,0x0001000152494654
 Mii Maker,0x000500101004A200
 ```
 
-The title id decides how the entry is launched: vWii titles through the vWii, Wii U titles directly. Entries whose title is not installed are left out of the menu. Up to 4 entries are shown. A custom entry can be set as the autoboot title like any other.
+The title id decides how the entry is launched: vWii titles through the vWii, Wii U titles directly. Entries whose title is not installed are left out of the menu. Up to 4 entries are shown, as many as fit: the menu has room for 7 rows in all. System applets (title ids starting with 00050030, like the Internet Browser) can't be custom entries. A custom entry can be set as the autoboot title like any other.
 
 ## Buildflags
 

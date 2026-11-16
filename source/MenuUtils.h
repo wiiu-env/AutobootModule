@@ -30,8 +30,10 @@ enum {
 
 // Entries from bootOptions.cfg use BOOT_OPTION_CUSTOM_BASE + their index in the file.
 #define BOOT_OPTION_CUSTOM_BASE 0x100
-// The menu has no scrolling; with the built-in options this still fits on screen.
+// At most this many custom entries, fewer if the menu runs out of rows.
 #define MAX_CUSTOM_BOOT_OPTIONS 4
+// The menu doesn't scroll, and an eighth row would cover the update status line.
+#define MAX_MENU_ROWS           7
 
 struct CustomBootOption {
     std::string name;

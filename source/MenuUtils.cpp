@@ -80,6 +80,12 @@ std::vector<CustomBootOption> readCustomBootOptions(const std::string &path) {
             continue;
         }
 
+        // System applets (the browser, the eShop, ...) need their own launch calls.
+        if ((titleId >> 32) == 0x00050030) {
+            DEBUG_FUNCTION_LINE_WARN("bootOptions.cfg: %016llx is a system applet, which can't be a custom entry", titleId);
+            continue;
+        }
+
         trimInPlace(line);
         if (line[0] == '\0') {
             DEBUG_FUNCTION_LINE_WARN("bootOptions.cfg: entry for %016llx has no name", titleId);
