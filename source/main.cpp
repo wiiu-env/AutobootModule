@@ -131,9 +131,10 @@ int32_t main(int32_t argc, char **argv) {
         if (!AXIsInit()) {
             AXInit();
         }
-        // A saved custom entry whose title is gone stays saved (it comes back once the title
-        // is reinstalled) instead of being preselected or overwritten by the menu.
-        int32_t menuInput = (bootSelection >= BOOT_OPTION_CUSTOM_BASE && menu.count(bootSelection) == 0) ? -1 : bootSelection;
+        // A saved entry the menu doesn't show (a custom title that's gone, or a missing Homebrew
+        // Launcher or vWii Homebrew Channel) stays saved and comes back once it's available again,
+        // instead of being preselected or overwritten by the menu.
+        int32_t menuInput = (bootSelection >= 0 && menu.count(bootSelection) == 0) ? -1 : bootSelection;
         bootSelection     = handleMenuScreen(configPath, menuInput, menu, customOptions);
         hadMenu           = true;
     }
