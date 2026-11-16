@@ -220,6 +220,9 @@ int32_t handleMenuScreen(std::string &configPath, int32_t autobootOptionInput, c
 
     int32_t selectedIndex = autobootOptionInput > 0 ? autobootOptionInput : 0;
     int autobootIndex     = autobootOptionInput;
+    // Set by X or Y: the saved choice is written even if it matches the input, so X can clear
+    // a saved custom entry whose title isn't installed (the menu gets -1 for it).
+    bool autobootChanged = false;
 
     // "Convert" id to index
     int32_t offset = 0;
@@ -271,9 +274,11 @@ int32_t handleMenuScreen(std::string &configPath, int32_t autobootOptionInput, c
             } else if (input.trigger & VPAD_BUTTON_A) {
                 break;
             } else if (input.trigger & (VPAD_BUTTON_X | VPAD_BUTTON_MINUS)) {
-                autobootIndex = -1;
+                autobootIndex   = -1;
+                autobootChanged = true;
             } else if (input.trigger & (VPAD_BUTTON_Y | VPAD_BUTTON_PLUS)) {
-                autobootIndex = selectedIndex;
+                autobootIndex   = selectedIndex;
+                autobootChanged = true;
             } else if ((input.hold & (VPAD_BUTTON_PLUS | VPAD_BUTTON_MINUS)) == (VPAD_BUTTON_PLUS | VPAD_BUTTON_MINUS)) {
                 if (holdUpdateBlockedForFrames++ > 50) {
                     if (gUpdatesBlocked) {
@@ -312,7 +317,7 @@ int32_t handleMenuScreen(std::string &configPath, int32_t autobootOptionInput, c
         autoboot = std::next(menu.begin(), autobootIndex)->first;
     }
 
-    if (autoboot != autobootOptionInput) {
+    if (autobootChanged || autoboot != autobootOptionInput) {
         writeAutobootOption(configPath, autoboot, customOptions);
     }
 
