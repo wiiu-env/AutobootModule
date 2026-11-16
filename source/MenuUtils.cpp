@@ -86,7 +86,8 @@ std::vector<CustomBootOption> readCustomBootOptions(const std::string &path, std
             continue;
         }
 
-        if (line[0] == '@') {
+        // A line with a comma is a custom entry, even if its name starts with @.
+        if (line[0] == '@' && !strchr(line, ',')) {
             char *name = line + 1;
             trimInPlace(name);
             int32_t builtIn = builtInOptionNamed(name);
