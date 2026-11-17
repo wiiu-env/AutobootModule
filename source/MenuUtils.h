@@ -6,6 +6,7 @@
 #include <memory>
 #include <nn/act.h>
 #include <string>
+#include <utility>
 #include <vector>
 
 #define UPDATE_SKIP_PATH         "fs:/vol/external01/wiiu/environments/skipUpdateWarn"
@@ -28,11 +29,34 @@ enum {
     BOOT_OPTION_VWII_HOMEBREW_CHANNEL,
 };
 
-int32_t readAutobootOption(std::string &configPath);
+// Entries from bootOptions.cfg use BOOT_OPTION_CUSTOM_BASE + their index in the file.
+#define BOOT_OPTION_CUSTOM_BASE 0x100
+// At most this many custom entries, fewer if the menu runs out of rows.
+#define MAX_CUSTOM_BOOT_OPTIONS 4
+// The menu doesn't scroll, and an eighth row would cover the update status line.
+#define MAX_MENU_ROWS           7
 
-void writeAutobootOption(std::string &configPath, int32_t autobootOption);
+// Boot menu entries (option id, name) in the order they are shown.
+using BootMenu = std::vector<std::pair<uint32_t, std::string>>;
 
-int32_t handleMenuScreen(std::string &configPath, int32_t autobootOptionInput, const std::map<uint32_t, std::string> &menu);
+struct CustomBootOption {
+    std::string name;
+    uint64_t titleId;
+};
+
+// Reads the custom entries from bootOptions.cfg. When the file also has "@" lines naming
+// built-in entries, `menuOrder` gets every listed entry's option id in the file's order;
+// without them it stays empty and the menu keeps the usual order.
+std::vector<CustomBootOption> readCustomBootOptions(const std::string &path, std::vector<uint32_t> &menuOrder);
+
+int32_t readAutobootOption(std::string &configPath, const std::vector<CustomBootOption> &customOptions);
+
+void writeAutobootOption(std::string &configPath, int32_t autobootOption, const std::vector<CustomBootOption> &customOptions);
+
+// `ordered`: bootOptions.cfg sets the menu order; with no autoboot entry the cursor then
+// starts on the first entry instead of the Wii U Menu.
+int32_t handleMenuScreen(std::string &configPath, int32_t autobootOptionInput, const BootMenu &menu,
+                         const std::vector<CustomBootOption> &customOptions, bool ordered);
 
 nn::act::SlotNo handleAccountSelectScreen(const std::vector<std::shared_ptr<AccountInfo>> &data);
 
