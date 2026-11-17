@@ -4,6 +4,7 @@
 #include "logger.h"
 #include <codecvt>
 #include <coreinit/filesystem_fsa.h>
+#include <cstdio>
 #include <filesystem>
 #include <locale>
 #include <malloc.h>
@@ -116,9 +117,16 @@ void bootvWiiMenu() {
     launchvWiiTitle(0);
 }
 
-uint64_t getVWiiHBLTitleId() {
-    // fall back to booting the vWii system menu if anything fails
-    uint64_t titleId = 0;
+bool isVWiiTitle(uint64_t titleId) {
+    return (titleId >> 48) == 0x0001;
+}
+
+bool isWiiUTitle(uint64_t titleId) {
+    return (titleId >> 48) == 0x0005;
+}
+
+bool vWiiTitleExists(uint64_t titleId) {
+    bool exists = false;
 
     FSAInit();
     auto client = FSAAddClient(nullptr);
@@ -126,16 +134,12 @@ uint64_t getVWiiHBLTitleId() {
         if (Mocha_UnlockFSClientEx(client) == MOCHA_RESULT_SUCCESS) {
             // mount the slccmpt
             if (FSAMount(client, "/dev/slccmpt01", "/vol/storage_abm_slccmpt01", FSA_MOUNT_FLAG_GLOBAL_MOUNT, nullptr, 0) >= 0) {
+                // every installed title has a TMD; content file names depend on the title
+                char path[0x80];
+                snprintf(path, sizeof(path), "/vol/storage_abm_slccmpt01/title/%08x/%08x/content/title.tmd",
+                         (uint32_t) (titleId >> 32), (uint32_t) titleId);
                 FSStat stat;
-
-                // test if the OHBC or HBC is installed
-                if (FSAGetStat(client, "/vol/storage_abm_slccmpt01/title/00010001/4f484243/content/00000000.app", &stat) >= 0) {
-                    titleId = 0x000100014F484243L; // 'OHBC'
-                } else if (FSAGetStat(client, "/vol/storage_abm_slccmpt01/title/00010001/4c554c5a/content/00000000.app", &stat) >= 0) {
-                    titleId = 0x000100014C554C5AL; // 'LULZ'
-                } else {
-                    DEBUG_FUNCTION_LINE("Cannot find HBC");
-                }
+                exists = FSAGetStat(client, path, &stat) >= 0;
                 FSAUnmount(client, "/vol/storage_abm_slccmpt01", FSA_UNMOUNT_FLAG_FORCE);
             } else {
                 DEBUG_FUNCTION_LINE_ERR("Failed to mount slccmpt01");
@@ -147,11 +151,44 @@ uint64_t getVWiiHBLTitleId() {
     } else {
         DEBUG_FUNCTION_LINE_ERR("Failed to add FSAClient");
     }
-    return titleId;
+    return exists;
+}
+
+bool titleExists(uint64_t titleId) {
+    if (isVWiiTitle(titleId)) {
+        return vWiiTitleExists(titleId);
+    }
+    if (isWiiUTitle(titleId)) {
+        return SYSCheckTitleExists(titleId);
+    }
+    return false;
+}
+
+uint64_t getVWiiHBLTitleId() {
+    // test if the OHBC or HBC is installed, fall back to booting the vWii system menu if anything fails
+    if (vWiiTitleExists(0x000100014F484243L)) {
+        return 0x000100014F484243L; // 'OHBC'
+    }
+    if (vWiiTitleExists(0x000100014C554C5AL)) {
+        return 0x000100014C554C5AL; // 'LULZ'
+    }
+    DEBUG_FUNCTION_LINE("Cannot find HBC");
+    return 0;
 }
 
 void bootHomebrewChannel() {
     uint64_t titleId = getVWiiHBLTitleId();
     DEBUG_FUNCTION_LINE("Launching vWii title %016llx", titleId);
     launchvWiiTitle(titleId);
+}
+
+void bootCustomTitle(uint64_t titleId) {
+    if (isVWiiTitle(titleId)) {
+        DEBUG_FUNCTION_LINE("Launching vWii title %016llx", titleId);
+        launchvWiiTitle(titleId);
+    } else {
+        handleAccountSelection();
+        DEBUG_FUNCTION_LINE("Launching Wii U title %016llx", titleId);
+        _SYSLaunchTitleWithStdArgsInNoSplash(titleId, nullptr);
+    }
 }

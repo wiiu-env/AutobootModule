@@ -85,11 +85,13 @@ int32_t main(int32_t argc, char **argv) {
         DEBUG_FUNCTION_LINE_ERR("Failed to create FSA Client");
     }
 
-    bool showvHBL          = getVWiiHBLTitleId() != 0;
-    bool showHBL           = false;
-    std::string configPath = "fs:/vol/external01/wiiu/autoboot.cfg";
+    bool showvHBL               = getVWiiHBLTitleId() != 0;
+    bool showHBL                = false;
+    std::string configPath      = "fs:/vol/external01/wiiu/autoboot.cfg";
+    std::string bootOptionsPath = "fs:/vol/external01/wiiu/bootOptions.cfg";
     if (argc >= 1) {
-        configPath = std::string(argv[0]) + "/autoboot.cfg";
+        configPath      = std::string(argv[0]) + "/autoboot.cfg";
+        bootOptionsPath = std::string(argv[0]) + "/bootOptions.cfg";
 
         auto hblInstallerPath = std::string(argv[0]) + "/modules/setup/50_hbl_installer.rpx";
         struct stat st {};
@@ -98,7 +100,8 @@ int32_t main(int32_t argc, char **argv) {
         }
     }
 
-    int32_t bootSelection = readAutobootOption(configPath);
+    auto customOptions    = readCustomBootOptions(bootOptionsPath);
+    int32_t bootSelection = readAutobootOption(configPath, customOptions);
 
     std::map<uint32_t, std::string> menu;
     menu[BOOT_OPTION_WII_U_MENU] = "Wii U Menu";
@@ -109,16 +112,31 @@ int32_t main(int32_t argc, char **argv) {
     if (showvHBL) {
         menu[BOOT_OPTION_VWII_HOMEBREW_CHANNEL] = "vWii Homebrew Channel";
     }
+    for (uint32_t i = 0; i < customOptions.size(); i++) {
+        // Only offer titles that are installed, so a stale entry can never be launched.
+        if (!titleExists(customOptions[i].titleId)) {
+            DEBUG_FUNCTION_LINE_WARN("bootOptions.cfg: %016llx (%s) is not installed", customOptions[i].titleId, customOptions[i].name.c_str());
+        } else if (menu.size() >= MAX_MENU_ROWS) {
+            DEBUG_FUNCTION_LINE_WARN("bootOptions.cfg: no room in the menu for %016llx (%s)", customOptions[i].titleId, customOptions[i].name.c_str());
+        } else {
+            menu[BOOT_OPTION_CUSTOM_BASE + i] = customOptions[i].name;
+        }
+    }
 
     if ((bootSelection == -1) ||
         (bootSelection == BOOT_OPTION_HOMEBREW_LAUNCHER && !showHBL) ||
         (bootSelection == BOOT_OPTION_VWII_HOMEBREW_CHANNEL && !showvHBL) ||
+        (bootSelection >= BOOT_OPTION_CUSTOM_BASE && menu.count(bootSelection) == 0) ||
         (buttons.hold & VPAD_BUTTON_PLUS)) {
         if (!AXIsInit()) {
             AXInit();
         }
-        bootSelection = handleMenuScreen(configPath, bootSelection, menu);
-        hadMenu       = true;
+        // A saved entry the menu doesn't show (a custom title that's gone, or a missing Homebrew
+        // Launcher or vWii Homebrew Channel) stays saved and comes back once it's available again,
+        // instead of being preselected or overwritten by the menu.
+        int32_t menuInput = (bootSelection >= 0 && menu.count(bootSelection) == 0) ? -1 : bootSelection;
+        bootSelection     = handleMenuScreen(configPath, menuInput, menu, customOptions);
+        hadMenu           = true;
     }
 
     if (bootSelection >= 0) {
@@ -144,6 +162,10 @@ int32_t main(int32_t argc, char **argv) {
                 bootHomebrewChannel();
                 break;
             default:
+                if (bootSelection >= BOOT_OPTION_CUSTOM_BASE && menu.count(bootSelection) != 0) {
+                    bootCustomTitle(customOptions[bootSelection - BOOT_OPTION_CUSTOM_BASE].titleId);
+                    break;
+                }
                 bootWiiUMenu();
                 break;
         }

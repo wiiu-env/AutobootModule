@@ -28,11 +28,26 @@ enum {
     BOOT_OPTION_VWII_HOMEBREW_CHANNEL,
 };
 
-int32_t readAutobootOption(std::string &configPath);
+// Entries from bootOptions.cfg use BOOT_OPTION_CUSTOM_BASE + their index in the file.
+#define BOOT_OPTION_CUSTOM_BASE 0x100
+// At most this many custom entries, fewer if the menu runs out of rows.
+#define MAX_CUSTOM_BOOT_OPTIONS 4
+// The menu doesn't scroll, and an eighth row would cover the update status line.
+#define MAX_MENU_ROWS           7
 
-void writeAutobootOption(std::string &configPath, int32_t autobootOption);
+struct CustomBootOption {
+    std::string name;
+    uint64_t titleId;
+};
 
-int32_t handleMenuScreen(std::string &configPath, int32_t autobootOptionInput, const std::map<uint32_t, std::string> &menu);
+std::vector<CustomBootOption> readCustomBootOptions(const std::string &path);
+
+int32_t readAutobootOption(std::string &configPath, const std::vector<CustomBootOption> &customOptions);
+
+void writeAutobootOption(std::string &configPath, int32_t autobootOption, const std::vector<CustomBootOption> &customOptions);
+
+int32_t handleMenuScreen(std::string &configPath, int32_t autobootOptionInput, const std::map<uint32_t, std::string> &menu,
+                         const std::vector<CustomBootOption> &customOptions);
 
 nn::act::SlotNo handleAccountSelectScreen(const std::vector<std::shared_ptr<AccountInfo>> &data);
 

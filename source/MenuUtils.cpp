@@ -1,5 +1,6 @@
 #include "MenuUtils.h"
 #include "ACTAccountInfo.h"
+#include "BootUtils.h"
 #include "DrawUtils.h"
 #include "InputUtils.h"
 #include "PairUtils.h"
@@ -7,10 +8,13 @@
 #include "main.h"
 #include "utils.h"
 #include "version.h"
+#include <cctype>
 #include <coreinit/debug.h>
 #include <coreinit/filesystem_fsa.h>
 #include <coreinit/screen.h>
 #include <coreinit/thread.h>
+#include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <gx2/state.h>
 #include <malloc.h>
@@ -30,12 +34,100 @@ const char *autoboot_config_strings[] = {
         "vwii_homebrew_channel",
 };
 
-int32_t readAutobootOption(std::string &configPath) {
+#define CUSTOM_AUTOBOOT_PREFIX "title_"
+
+static void trimInPlace(char *str) {
+    char *start = str;
+    while (*start && isspace((unsigned char) *start)) {
+        start++;
+    }
+    char *end = start + strlen(start);
+    while (end > start && isspace((unsigned char) end[-1])) {
+        end--;
+    }
+    *end = '\0';
+    memmove(str, start, end - start + 1);
+}
+
+std::vector<CustomBootOption> readCustomBootOptions(const std::string &path) {
+    std::vector<CustomBootOption> result;
+    FILE *f = fopen(path.c_str(), "r");
+    if (!f) {
+        return result;
+    }
+
+    // One entry per line: "Name,0x0001000152494654". The title id decides how it is launched.
+    char line[256];
+    while (fgets(line, sizeof(line), f)) {
+        trimInPlace(line);
+        if (line[0] == '\0' || line[0] == '#') {
+            continue;
+        }
+
+        char *comma = strrchr(line, ',');
+        if (!comma) {
+            DEBUG_FUNCTION_LINE_WARN("bootOptions.cfg: no comma in \"%s\"", line);
+            continue;
+        }
+        *comma = '\0';
+
+        char *idStr = comma + 1;
+        trimInPlace(idStr);
+        char *idEnd      = nullptr;
+        uint64_t titleId = strtoull(idStr, &idEnd, 16);
+        if (idEnd == idStr || *idEnd != '\0' || !(isVWiiTitle(titleId) || isWiiUTitle(titleId))) {
+            DEBUG_FUNCTION_LINE_WARN("bootOptions.cfg: \"%s\" is not a full vWii or Wii U title id", idStr);
+            continue;
+        }
+
+        // System applets (the browser, the eShop, ...) need their own launch calls.
+        if ((titleId >> 32) == 0x00050030) {
+            DEBUG_FUNCTION_LINE_WARN("bootOptions.cfg: %016llx is a system applet, which can't be a custom entry", titleId);
+            continue;
+        }
+
+        trimInPlace(line);
+        if (line[0] == '\0') {
+            DEBUG_FUNCTION_LINE_WARN("bootOptions.cfg: entry for %016llx has no name", titleId);
+            continue;
+        }
+
+        bool duplicate = false;
+        for (auto &option : result) {
+            duplicate |= option.titleId == titleId;
+        }
+        if (duplicate) {
+            DEBUG_FUNCTION_LINE_WARN("bootOptions.cfg: %016llx is listed twice", titleId);
+            continue;
+        }
+
+        if (result.size() >= MAX_CUSTOM_BOOT_OPTIONS) {
+            DEBUG_FUNCTION_LINE_WARN("bootOptions.cfg: only the first %d entries are used", MAX_CUSTOM_BOOT_OPTIONS);
+            break;
+        }
+        result.push_back({line, titleId});
+    }
+    fclose(f);
+    return result;
+}
+
+int32_t readAutobootOption(std::string &configPath, const std::vector<CustomBootOption> &customOptions) {
     FILE *f = fopen(configPath.c_str(), "r");
     if (f) {
         char buf[128]{};
         fgets(buf, sizeof(buf), f);
         fclose(f);
+
+        // Custom entries are saved by title id, so renaming one keeps it selected.
+        if (strncmp(CUSTOM_AUTOBOOT_PREFIX, buf, strlen(CUSTOM_AUTOBOOT_PREFIX)) == 0) {
+            uint64_t titleId = strtoull(buf + strlen(CUSTOM_AUTOBOOT_PREFIX), nullptr, 16);
+            for (uint32_t i = 0; i < customOptions.size(); i++) {
+                if (customOptions[i].titleId == titleId) {
+                    return BOOT_OPTION_CUSTOM_BASE + i;
+                }
+            }
+            return -1;
+        }
 
         for (uint32_t i = 0; i < sizeof(autoboot_config_strings) / sizeof(char *); i++) {
             if (strncmp(autoboot_config_strings[i], buf, strlen(autoboot_config_strings[i])) == 0) {
@@ -46,10 +138,19 @@ int32_t readAutobootOption(std::string &configPath) {
     return -1;
 }
 
-void writeAutobootOption(std::string &configPath, int32_t autobootOption) {
+void writeAutobootOption(std::string &configPath, int32_t autobootOption, const std::vector<CustomBootOption> &customOptions) {
     FILE *f = fopen(configPath.c_str(), "w");
     if (f) {
-        if (autobootOption >= 0) {
+        if (autobootOption >= BOOT_OPTION_CUSTOM_BASE) {
+            uint32_t index = autobootOption - BOOT_OPTION_CUSTOM_BASE;
+            if (index < customOptions.size()) {
+                char buf[sizeof(CUSTOM_AUTOBOOT_PREFIX) + 16];
+                snprintf(buf, sizeof(buf), CUSTOM_AUTOBOOT_PREFIX "%016llx", customOptions[index].titleId);
+                fputs(buf, f);
+            } else {
+                fputs("none", f);
+            }
+        } else if (autobootOption >= 0) {
             fputs(autoboot_config_strings[autobootOption], f);
         } else {
             fputs("none", f);
@@ -108,7 +209,8 @@ void drawMenuScreen(const std::map<uint32_t, std::string> &menu, uint32_t select
     DrawUtils::endDraw();
 }
 
-int32_t handleMenuScreen(std::string &configPath, int32_t autobootOptionInput, const std::map<uint32_t, std::string> &menu) {
+int32_t handleMenuScreen(std::string &configPath, int32_t autobootOptionInput, const std::map<uint32_t, std::string> &menu,
+                         const std::vector<CustomBootOption> &customOptions) {
     auto screenBuffer = DrawUtils::InitOSScreen();
     if (!screenBuffer) {
         OSFatal("AutobootModule: Failed to alloc memory for screen");
@@ -124,6 +226,9 @@ int32_t handleMenuScreen(std::string &configPath, int32_t autobootOptionInput, c
 
     int32_t selectedIndex = autobootOptionInput > 0 ? autobootOptionInput : 0;
     int autobootIndex     = autobootOptionInput;
+    // Set by X or Y: the saved choice is written even if it matches the input, so X can clear
+    // a saved custom entry whose title isn't installed (the menu gets -1 for it).
+    bool autobootChanged = false;
 
     // "Convert" id to index
     int32_t offset = 0;
@@ -175,9 +280,11 @@ int32_t handleMenuScreen(std::string &configPath, int32_t autobootOptionInput, c
             } else if (input.trigger & VPAD_BUTTON_A) {
                 break;
             } else if (input.trigger & (VPAD_BUTTON_X | VPAD_BUTTON_MINUS)) {
-                autobootIndex = -1;
+                autobootIndex   = -1;
+                autobootChanged = true;
             } else if (input.trigger & (VPAD_BUTTON_Y | VPAD_BUTTON_PLUS)) {
-                autobootIndex = selectedIndex;
+                autobootIndex   = selectedIndex;
+                autobootChanged = true;
             } else if ((input.hold & (VPAD_BUTTON_PLUS | VPAD_BUTTON_MINUS)) == (VPAD_BUTTON_PLUS | VPAD_BUTTON_MINUS)) {
                 if (holdUpdateBlockedForFrames++ > 50) {
                     if (gUpdatesBlocked) {
@@ -216,8 +323,8 @@ int32_t handleMenuScreen(std::string &configPath, int32_t autobootOptionInput, c
         autoboot = std::next(menu.begin(), autobootIndex)->first;
     }
 
-    if (autoboot != autobootOptionInput) {
-        writeAutobootOption(configPath, autoboot);
+    if (autobootChanged || autoboot != autobootOptionInput) {
+        writeAutobootOption(configPath, autoboot, customOptions);
     }
 
     return selected;

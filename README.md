@@ -13,6 +13,18 @@ Press Y on the autoboot menu to set autobooting to this titles. To revert it, fo
 - Boot into Wii U Menu, Homebrew Channel, vWii System Menu or vWii Homebrew Channel.
 - Full support of Quick Boot Menu of the Gamepad when coldbooting
 - Set a autoboot title
+- Add your own vWii or Wii U titles to the menu
+
+## Custom boot entries
+Create `bootOptions.cfg` next to `autoboot.cfg` (in the `[ENVIRONMENT]` folder) with one entry per line: a name, a comma, and the title's full 64-bit title id.
+
+```
+# vWii titles start with 00010001, Wii U titles with 00050000
+My vWii Channel,0x0001000152494654
+Mii Maker,0x000500101004A200
+```
+
+The title id decides how the entry is launched: vWii titles through the vWii, Wii U titles directly. Entries whose title is not installed are left out of the menu. Up to 4 entries are shown, as many as fit: the menu has room for 7 rows in all. System applets (title ids starting with 00050030, like the Internet Browser) can't be custom entries. A custom entry can be set as the autoboot title like any other.
 
 ## Buildflags
 
